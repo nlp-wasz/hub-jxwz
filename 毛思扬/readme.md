@@ -27,3 +27,22 @@
 2、阅读项目计划书  + 初步项目代码，写清楚四个模型的优缺点，形成一个word/markdown提交。
 
 ​		详见week3.md
+
+# 4.第四周
+1、 单独给一个外卖评价数据集，需要大家使用bert模型做微调，使用fastapi部署为服务。
+
+​		详见01-intent-classify.py
+
+2、 部署完服务后，使用ab测试一下，1/5/10 并发下总耗时；
+​		
+​		bert
+​		![ab_results_bert.png](Week4/01-intent-classify/test/ab_results_bert.png)
+​		
+​		gpt
+​		![ab_results_gpt.png](Week4/01-intent-classify/test/ab_results_gpt.png)
+​		
+​		regex
+​		![ab_results_regex.png](Week4/01-intent-classify/test/ab_results_regex.png)
+​		
+​		tfidf
+​		![ab_results_tfidf.png](Week4/01-intent-classify/test/ab_results_tfidf.png)

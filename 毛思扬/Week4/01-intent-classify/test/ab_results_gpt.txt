@@ -1,0 +1,46 @@
+This is ApacheBench, Version 2.3 <$Revision: 1913912 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 0.0.0.0 (be patient).....done
+
+
+Server Software:        uvicorn
+Server Hostname:        0.0.0.0
+Server Port:            8000
+
+Document Path:          /v1/text-cls/gpt
+Document Length:        121 bytes
+
+Concurrency Level:      100
+Time taken for tests:   4.493 seconds
+Complete requests:      100
+Failed requests:        10
+   (Connect: 0, Receive: 0, Length: 10, Exceptions: 0)
+Total transferred:      24689 bytes
+Total body sent:        22300
+HTML transferred:       12089 bytes
+Requests per second:    22.26 [#/sec] (mean)
+Time per request:       4492.949 [ms] (mean)
+Time per request:       44.929 [ms] (mean, across all concurrent requests)
+Transfer rate:          5.37 [Kbytes/sec] received
+                        4.85 kb/s sent
+                        10.21 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    2   0.4      2       3
+Processing:  1248 2313 388.5   2088    3242
+Waiting:     1245 2313 388.6   2088    3242
+Total:       1249 2315 388.7   2089    3244
+
+Percentage of the requests served within a certain time (ms)
+  50%   2089
+  66%   2238
+  75%   2550
+  80%   2745
+  90%   3018
+  95%   3144
+  98%   3219
+  99%   3244
+ 100%   3244 (longest request)
