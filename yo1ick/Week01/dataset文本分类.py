@@ -34,5 +34,3 @@ test_feature = vector.transform([test_sentence])
 print(f"待预测的文本: {test_query} \n"
       f"KNN模型预测结果: :{model1.predict(test_feature)} \n"
       f"决策树模型预测结果::{model2.predict(test_feature)} \n")
-
-
