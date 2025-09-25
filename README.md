@@ -1,9 +1,3 @@
-### Branches
-main : fork-sync 
-feature/tune-xgboost : Week01/homework2.py
-personal-changes: study notes and project codes
-
-
 ### 作业提交说明
 - 每位同学建立一个自己名字的文件夹，每周作业都要提交到自己名下文件夹中，单独建立一个文件夹
 - 注意不要修改其他同学和老师提交的文件
