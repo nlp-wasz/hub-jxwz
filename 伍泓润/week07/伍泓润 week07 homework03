@@ -1,0 +1,232 @@
+import json
+import torch
+from datasets import Dataset
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    DataCollatorForSeq2Seq,
+    TrainingArguments,
+    Trainer,
+)
+from peft import LoraConfig, TaskType, get_peft_model
+from tqdm import tqdm
+
+# 加载CMRC2018数据集
+def load_cmrc2018_data(file_path):
+    with open(file_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+    return data
+
+# 转换为指令格式
+def convert_to_instruction_format(data, max_samples=None):
+    instructions = []
+    outputs = []
+    
+    for paragraph in data['data']:
+        context = paragraph['paragraphs'][0]['context']
+        for qa in paragraph['paragraphs'][0]['qas']:
+            question = qa['question']
+            answer = qa['answers'][0]['text']
+            
+            # 构建指令格式
+            instruction = f"根据以下上下文回答问题：\n上下文：{context}\n问题：{question}"
+            instructions.append(instruction)
+            outputs.append(answer)
+            
+            if max_samples and len(instructions) >= max_samples:
+                break
+        if max_samples and len(instructions) >= max_samples:
+            break
+    
+    return instructions, outputs
+
+# 初始化模型和tokenizer
+def initialize_model_and_tokenizer(model_path):
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path,
+        use_fast=False,
+        trust_remote_code=True
+    )
+    
+    # 设置padding token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        device_map="auto",
+        torch_dtype=torch.float16,
+        trust_remote_code=True
+    )
+    
+    return tokenizer, model
+
+# 数据处理函数
+def process_func(example, tokenizer, max_length=512):
+    # 构建指令文本
+    instruction_text = f"<|im_start|>system\n你是一个知识问答助手，请根据上下文回答问题。<|im_end|>\n<|im_start|>user\n{example['instruction']}<|im_end|>\n<|im_start|>assistant\n"
+    instruction = tokenizer(instruction_text, add_special_tokens=False)
+    
+    # 构建响应部分
+    response = tokenizer(example['output'], add_special_tokens=False)
+    
+    # 组合输入
+    input_ids = instruction['input_ids'] + response['input_ids'] + [tokenizer.pad_token_id]
+    attention_mask = instruction['attention_mask'] + response['attention_mask'] + [1]
+    labels = [-100] * len(instruction['input_ids']) + response['input_ids'] + [tokenizer.pad_token_id]
+    
+    # 截断
+    if len(input_ids) > max_length:
+        input_ids = input_ids[:max_length]
+        attention_mask = attention_mask[:max_length]
+        labels = labels[:max_length]
+    
+    return {
+        'input_ids': input_ids,
+        'attention_mask': attention_mask,
+        'labels': labels
+    }
+
+# 配置LoRA
+def setup_lora(model):
+    config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        inference_mode=False,
+        r=8,
+        lora_alpha=32,
+        lora_dropout=0.1
+    )
+    
+    model = get_peft_model(model, config)
+    model.print_trainable_parameters()
+    return model
+
+# 预测函数
+def predict_answer(model, tokenizer, context, question, device='cuda'):
+    instruction = f"根据以下上下文回答问题：\n上下文：{context}\n问题：{question}"
+    
+    messages = [
+        {"role": "system", "content": "你是一个知识问答助手，请根据上下文回答问题。"},
+        {"role": "user", "content": instruction}
+    ]
+    
+    formatted_text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    model_inputs = tokenizer([formatted_text], return_tensors="pt").to(device)
+    
+    with torch.no_grad():
+        generated_ids = model.generate(
+            **model_inputs,
+            max_new_tokens=100,
+            do_sample=False,
+            temperature=0.1,
+            pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id
+        )
+    
+    # 提取生成的答案
+    generated_ids = generated_ids[:, model_inputs.input_ids.shape[1]:]
+    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    
+    return response.strip()
+
+# 主函数
+def main():
+    # 1. 加载数据
+    print("加载CMRC2018数据集...")
+    train_data = load_cmrc2018_data('./cmrc2018_public/train.json')
+    dev_data = load_cmrc2018_data('./cmrc2018_public/dev.json')
+    
+    # 2. 转换为指令格式（限制样本数以便快速实验）
+    train_instructions, train_outputs = convert_to_instruction_format(train_data, max_samples=1000)
+    dev_instructions, dev_outputs = convert_to_instruction_format(dev_data, max_samples=200)
+    
+    # 3. 创建Dataset
+    train_dataset_dict = {
+        'instruction': train_instructions,
+        'output': train_outputs
+    }
+    eval_dataset_dict = {
+        'instruction': dev_instructions,
+        'output': dev_outputs
+    }
+    
+    train_ds = Dataset.from_dict(train_dataset_dict)
+    eval_ds = Dataset.from_dict(eval_dataset_dict)
+    
+    # 4. 初始化模型
+    print("初始化Qwen模型...")
+    model_path = "../models/Qwen/Qwen3-0.6B"  # 请根据实际路径修改
+    tokenizer, model = initialize_model_and_tokenizer(model_path)
+    
+    # 5. 处理数据
+    print("处理训练数据...")
+    process_func_with_tokenizer = lambda example: process_func(example, tokenizer)
+    tokenized_train = train_ds.map(process_func_with_tokenizer, remove_columns=train_ds.column_names)
+    tokenized_eval = eval_ds.map(process_func_with_tokenizer, remove_columns=eval_ds.column_names)
+    
+    # 6. 设置LoRA
+    print("设置LoRA...")
+    model.enable_input_require_grads()
+    model = setup_lora(model)
+    
+    # 7. 训练参数
+    training_args = TrainingArguments(
+        output_dir="./output_qwen_qa",
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,
+        learning_rate=2e-4,
+        num_train_epochs=3,
+        logging_steps=50,
+        eval_steps=50,
+        save_steps=100,
+        evaluation_strategy="steps",
+        save_strategy="steps",
+        load_best_model_at_end=True,
+        metric_for_best_model="eval_loss",
+        greater_is_better=False,
+        report_to="none"
+    )
+    
+    # 8. 创建Trainer
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=tokenized_train,
+        eval_dataset=tokenized_eval,
+        data_collator=DataCollatorForSeq2Seq(
+            tokenizer=tokenizer,
+            padding=True,
+            pad_to_multiple_of=8
+        ),
+    )
+    
+    # 9. 开始训练
+    print("开始训练...")
+    trainer.train()
+    
+    # 10. 保存模型
+    print("保存模型...")
+    trainer.save_model()
+    tokenizer.save_pretrained("./output_qwen_qa")
+    
+    return model, tokenizer
+
+# 测试函数
+def test_qa_model(model, tokenizer, test_samples=3):
+    # 加载测试数据
+    dev_data = load_cmrc2018_data('./cmrc2018_public/dev.json')
+    instructions, outputs = convert_to_instruction_format(dev_data, max_samples=test_samples)
+    
+    print("\n=== 测试问答模型 ===")
+    for i in range(test_samples):
+        # 从指令中提取上下文和问题
+        instruction = instructions[i]
+        lines = instruction.split('\n')
+        context = lines[1].replace('上下文：', '')
+        question = lines[2].replace('问
