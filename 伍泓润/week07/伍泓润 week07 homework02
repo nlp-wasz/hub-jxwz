@@ -1,0 +1,247 @@
+import pandas as pd
+from datasets import Dataset
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    DataCollatorForSeq2Seq,
+    TrainingArguments,
+    Trainer,
+)
+from peft import LoraConfig, TaskType, get_peft_model
+import torch
+import codecs
+import json
+from tqdm import tqdm
+
+# 定义实体类型（与BERT实体识别保持一致）
+tag_type = ['O', 'B-ORG', 'I-ORG', 'B-PER', 'I-PER', 'B-LOC', 'I-LOC']
+id2label = {i: label for i, label in enumerate(tag_type)}
+label2id = {label: i for i, label in enumerate(tag_type)}
+
+# 数据加载和预处理
+def load_msra_data():
+    """加载MSRA数据集并转换为指令格式"""
+    
+    # 加载训练数据
+    train_lines = codecs.open('./msra/train/sentences.txt').readlines()[:1000]
+    train_lines = [x.replace(' ', '').strip() for x in train_lines]
+    
+    train_tags = codecs.open('./msra/train/tags.txt').readlines()[:1000]
+    train_tags = [x.strip().split(' ') for x in train_tags]
+    
+    # 转换为指令格式
+    instructions = []
+    outputs = []
+    
+    for text, tags in zip(train_lines, train_tags):
+        # 构建指令
+        instruction = f"请从以下文本中识别实体：{text}"
+        
+        # 构建输出格式：实体类型:实体内容
+        entities = extract_entities_from_bio(text, tags)
+        output_text = ""
+        
+        if entities:
+            for entity_type, entity_text in entities:
+                output_text += f"{entity_type}:{entity_text}\n"
+        else:
+            output_text = "未识别到实体"
+        
+        instructions.append(instruction)
+        outputs.append(output_text.strip())
+    
+    return instructions, outputs
+
+def extract_entities_from_bio(text, tags):
+    """从BIO标签序列中提取实体"""
+    entities = []
+    current_entity = ""
+    current_type = ""
+    
+    for i, (char, tag) in enumerate(zip(text, tags)):
+        if tag.startswith('B-'):
+            # 开始新实体
+            if current_entity:
+                entities.append((current_type, current_entity))
+            current_entity = char
+            current_type = tag[2:]
+        elif tag.startswith('I-') and current_entity and current_type == tag[2:]:
+            # 继续当前实体
+            current_entity += char
+        else:
+            # 实体结束或非实体
+            if current_entity:
+                entities.append((current_type, current_entity))
+                current_entity = ""
+                current_type = ""
+    
+    # 处理最后一个实体
+    if current_entity:
+        entities.append((current_type, current_entity))
+    
+    return entities
+
+def prepare_dataset():
+    """准备训练数据集"""
+    instructions, outputs = load_msra_data()
+    
+    # 创建DataFrame
+    data = pd.DataFrame({
+        "instruction": instructions,
+        "output": outputs,
+        "input": ""  # 空输入
+    })
+    
+    # 转换为Hugging Face Dataset
+    dataset = Dataset.from_pandas(data)
+    return dataset
+
+# 初始化模型和tokenizer
+def initialize_model_and_tokenizer(model_path):
+    """初始化tokenizer和模型"""
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path,
+        use_fast=False,
+        trust_remote_code=True
+    )
+    
+    # 设置padding token
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        device_map="auto",
+        torch_dtype=torch.float16,
+        trust_remote_code=True
+    )
+    
+    return tokenizer, model
+
+# 数据处理函数
+def process_func(example, tokenizer, max_length=512):
+    """处理单个样本的函数"""
+    
+    # 构建指令部分（使用ChatML格式）
+    instruction_text = f"<|im_start|>system\n你是一个实体识别专家，需要从文本中识别出人名(PER)、地名(LOC)、组织机构名(ORG)等实体。<|im_end|>\n<|im_start|>user\n{example['instruction']}<|im_end|>\n<|im_start|>assistant\n"
+    instruction = tokenizer(instruction_text, add_special_tokens=False)
+    
+    # 构建响应部分
+    response = tokenizer(f"{example['output']}<|im_end|>", add_special_tokens=False)
+    
+    # 组合输入ID和注意力掩码
+    input_ids = instruction["input_ids"] + response["input_ids"]
+    attention_mask = instruction["attention_mask"] + response["attention_mask"]
+    
+    # 构建标签（指令部分用-100忽略，只计算响应部分的损失）
+    labels = [-100] * len(instruction["input_ids"]) + response["input_ids"]
+    
+    # 截断超过最大长度的序列
+    if len(input_ids) > max_length:
+        input_ids = input_ids[:max_length]
+        attention_mask = attention_mask[:max_length]
+        labels = labels[:max_length]
+    else:
+        # 填充到最大长度
+        padding_length = max_length - len(input_ids)
+        input_ids = input_ids + [tokenizer.pad_token_id] * padding_length
+        attention_mask = attention_mask + [0] * padding_length
+        labels = labels + [-100] * padding_length
+    
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels
+    }
+
+# 配置LoRA
+def setup_lora(model):
+    """设置LoRA配置"""
+    config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"],
+        inference_mode=False,
+        r=8,
+        lora_alpha=32,
+        lora_dropout=0.1
+    )
+    
+    model = get_peft_model(model, config)
+    model.print_trainable_parameters()
+    return model
+
+# 训练配置
+def setup_training_args():
+    """设置训练参数"""
+    return TrainingArguments(
+        output_dir="./output_qwen_ner",
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=4,
+        logging_steps=50,
+        num_train_epochs=3,
+        learning_rate=2e-4,
+        fp16=True,
+        save_steps=100,
+        eval_steps=100,
+        save_total_limit=2,
+        report_to="none"
+    )
+
+# 预测函数
+def predict_entities(model, tokenizer, text, device='cuda'):
+    """预测文本中的实体"""
+    # 构建消息
+    messages = [
+        {"role": "system", "content": "你是一个实体识别专家，需要从文本中识别出人名(PER)、地名(LOC)、组织机构名(ORG)等实体。"},
+        {"role": "user", "content": f"请从以下文本中识别实体：{text}"}
+    ]
+    
+    # 应用聊天模板
+    formatted_text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    # Tokenize输入
+    model_inputs = tokenizer([formatted_text], return_tensors="pt").to(device)
+    
+    # 生成预测
+    with torch.no_grad():
+        generated_ids = model.generate(
+            **model_inputs,
+            max_new_tokens=100,
+            do_sample=False,
+            temperature=0.1,
+            pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id
+        )
+    
+    # 提取生成的文本
+    response = tokenizer.decode(generated_ids[0][model_inputs.input_ids.shape[1]:], skip_special_tokens=True)
+    
+    # 解析实体
+    entities = parse_entities_from_response(response)
+    return entities, response
+
+def parse_entities_from_response(response):
+    """从模型响应中解析实体"""
+    entities = []
+    lines = response.strip().split('\n')
+    
+    for line in lines:
+        line = line.strip()
+        if ':' in line:
+            parts = line.split(':', 1)
+            if len(parts) == 2:
+                entity_type, entity_text = parts
+                entities.append((entity_type.strip(), entity_text.strip()))
+    
+    return entities
+
+# 主函数
+def main():
+    """主执行函数"""
+    # 1. 准备数据
+    print("准备数据集...")
+    dataset = prepare_dataset(
