@@ -1,0 +1,2 @@
+DeepWalk相当于图中的Word2Vec。它将图转为数字化表达，是连接NLP与图数据的桥梁。使得
+DeepWalk可以利用NLP的技术，用于训练模型。

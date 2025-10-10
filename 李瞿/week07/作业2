@@ -1,0 +1,407 @@
+import pandas as pd
+import numpy as np
+from datasets import Dataset
+from transformers import (
+    AutoTokenizer,
+    AutoModelForTokenClassification,
+    DataCollatorForTokenClassification,
+    TrainingArguments,
+    Trainer,
+)
+from peft import LoraConfig, TaskType, get_peft_model, PeftModel
+import torch
+from sklearn.metrics import accuracy_score, classification_report
+import warnings
+import codecs
+import os
+
+warnings.filterwarnings('ignore')
+
+# 检查设备
+device = torch.device("mps" if torch.backends.mps.is_available() else "cuda" if torch.cuda.is_available() else "cpu")
+print(f"使用设备: {device}")
+
+# 1.数据集读取
+# 定义标签类型 分7类，3类实体
+tag_type = ['O', 'B-ORG', 'I-ORG', 'B-PER', 'I-PER', 'B-LOC', 'I-LOC']
+id2label = {i: label for i, label in enumerate(tag_type)}
+label2id = {label: i for i, label in enumerate(tag_type)}
+
+# 加载训练数据 - 减少数据量以适应时间要求
+train_lines = codecs.open('./msra/train/sentences.txt', 'r', encoding='utf-8').readlines()[:5000]
+train_lines = [x.replace(' ', '').strip() for x in train_lines]
+
+train_tags = codecs.open('./msra/train/tags.txt').readlines()[:5000]
+train_tags = [x.strip().split(' ') for x in train_tags]
+train_tags = [[label2id[x] for x in tag] for tag in train_tags]
+
+# 加载验证数据
+val_lines = codecs.open('./msra/val/sentences.txt', 'r', encoding='utf-8').readlines()[:500]
+val_lines = [x.replace(' ', '').strip() for x in val_lines]
+
+val_tags = codecs.open('./msra/val/tags.txt').readlines()[:500]
+val_tags = [x.strip().split(' ') for x in val_tags]
+val_tags = [[label2id[x] for x in tag] for tag in val_tags]
+
+
+# 2.初始化模型和tokenizer
+def initialize_model_and_tokenizer(model_path):
+    """初始化tokenizer和模型"""
+    # 加载tokenizer，使用Fast版本以支持offset mapping
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path,
+        use_fast=True,  # 使用Fast版本
+        trust_remote_code=True
+    )
+
+    # 加载模型
+    model = AutoModelForTokenClassification.from_pretrained(
+        model_path,
+        num_labels=len(tag_type),
+        id2label=id2label,
+        label2id=label2id,
+        torch_dtype=torch.float16 if device.type != "cpu" else torch.float32
+    )
+
+    return tokenizer, model
+
+
+# 3.数据处理函数 - 简化版本
+def process_func(example, tokenizer, max_length=128):
+    """
+    处理单个样本的函数
+    将文本和标签转换为模型训练格式
+    """
+    # 构建输入文本
+    text = example['text']
+    labels = example['labels']
+
+    # Tokenize文本
+    encoding = tokenizer(
+        text,
+        truncation=True,
+        padding=False,
+        max_length=max_length,
+        is_split_into_words=True,
+        return_offsets_mapping=True
+    )
+
+    # 对齐标签
+    word_ids = encoding.word_ids()
+    aligned_labels = []
+    previous_word_idx = None
+
+    for word_idx in word_ids:
+        if word_idx is None:
+            # 特殊token
+            aligned_labels.append(-100)
+        elif word_idx != previous_word_idx:
+            # 新的词
+            aligned_labels.append(labels[word_idx] if word_idx < len(labels) else -100)
+        else:
+            # 子词token
+            aligned_labels.append(-100)
+        previous_word_idx = word_idx
+
+    encoding["labels"] = aligned_labels
+    # 移除offset_mapping，因为它不会被模型使用
+    encoding.pop("offset_mapping", None)
+    return encoding
+
+
+# 4.准备数据集
+def prepare_dataset(texts, tags):
+    # 将文本拆分为字符列表
+    tokens = [list(text) for text in texts]
+
+    # 创建数据集
+    data_dict = {
+        "text": tokens,
+        "labels": tags
+    }
+
+    dataset = Dataset.from_dict(data_dict)
+    return dataset
+
+
+# 5.配置LoRA - 优化版本
+def setup_lora(model):
+    """设置LoRA配置并应用到模型"""
+    config = LoraConfig(
+        task_type=TaskType.TOKEN_CLS,  # 任务类型，token分类
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],  # 减少目标模块
+        inference_mode=False,
+        r=16,  # 减少rank以提高速度
+        lora_alpha=32,
+        lora_dropout=0.1
+    )
+
+    model = get_peft_model(model, config)
+    model.print_trainable_parameters()
+    return model
+
+
+# 6.定义计算指标的函数
+def compute_metrics(p):
+    predictions, labels = p
+    predictions = np.argmax(predictions, axis=2)
+
+    # 移除忽略的索引（-100）
+    true_predictions = [
+        [id2label[p] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+    true_labels = [
+        [id2label[l] for (p, l) in zip(prediction, label) if l != -100]
+        for prediction, label in zip(predictions, labels)
+    ]
+
+    # 计算准确率
+    flat_true_predictions = [item for sublist in true_predictions for item in sublist]
+    flat_true_labels = [item for sublist in true_labels for item in sublist]
+
+    accuracy = accuracy_score(flat_true_labels, flat_true_predictions)
+
+    # 计算分类报告
+    report = classification_report(
+        flat_true_labels,
+        flat_true_predictions,
+        output_dict=True,
+        zero_division=0
+    )
+
+    # 提取各个类别的F1分数
+    f1_scores = {}
+    for label in tag_type:
+        if label in report:
+            f1_scores[f"{label}_f1"] = report[label]["f1-score"]
+
+    return {
+        "accuracy": accuracy,
+        **f1_scores
+    }
+
+
+# 7.预测函数 - 简化版本
+def predict_entities(model, tokenizer, sentence, device='cpu'):
+    """预测句子中的实体"""
+    model.eval()
+    model.to(device)
+
+    # 将句子转换为字符列表
+    tokens = list(sentence)
+
+    # Tokenize
+    inputs = tokenizer(
+        tokens,
+        is_split_into_words=True,
+        return_tensors="pt",
+        truncation=True,
+        padding=True,
+        max_length=128,
+        return_offsets_mapping=True
+    )
+
+    # 移动到设备
+    inputs_for_model = {k: v.to(device) for k, v in inputs.items() if k != 'offset_mapping'}
+
+    # 预测
+    with torch.no_grad():
+        outputs = model(**inputs_for_model)
+
+    predictions = torch.argmax(outputs.logits, dim=2)
+
+    # 将预测结果转换为标签
+    predicted_labels = [id2label[p.item()] for p in predictions[0]]
+
+    # 对齐标签
+    word_ids = inputs.word_ids()
+    aligned_labels = []
+    previous_word_idx = None
+    for i, word_idx in enumerate(word_ids):
+        if word_idx is not None and word_idx != previous_word_idx:
+            aligned_labels.append(predicted_labels[i])
+        previous_word_idx = word_idx
+
+    # 确保标签数量与token数量一致
+    if len(aligned_labels) > len(tokens):
+        aligned_labels = aligned_labels[:len(tokens)]
+    elif len(aligned_labels) < len(tokens):
+        aligned_labels.extend(['O'] * (len(tokens) - len(aligned_labels)))
+
+    # 提取实体
+    entities = []
+    current_entity = ""
+    current_type = ""
+
+    for token, label in zip(tokens, aligned_labels):
+        if label.startswith('B-'):
+            if current_entity:
+                entities.append((current_entity, current_type))
+            current_entity = token
+            current_type = label[2:]
+        elif label.startswith('I-') and current_entity and current_type == label[2:]:
+            current_entity += token
+        else:
+            if current_entity:
+                entities.append((current_entity, current_type))
+            current_entity = ""
+            current_type = ""
+            if label.startswith('B-'):
+                current_entity = token
+                current_type = label[2:]
+
+    if current_entity:
+        entities.append((current_entity, current_type))
+
+    return entities
+
+
+# 8.训练函数 - 10小时优化版本
+def train_model():
+    """训练模型 - 优化为约10小时训练时间"""
+    # 1. 准备数据
+    print("准备数据...")
+    train_dataset_raw = prepare_dataset(train_lines, train_tags)
+    eval_dataset_raw = prepare_dataset(val_lines, val_tags)
+
+    # 2. 初始化模型和tokenizer
+    print("初始化模型和tokenizer...")
+    model_path = "../models/Qwen/Qwen3-0.6B"  # 请根据实际路径调整
+    tokenizer, model = initialize_model_and_tokenizer(model_path)
+
+    # 3. 处理数据
+    print("处理训练数据...")
+    process_func_with_tokenizer = lambda example: process_func(example, tokenizer)
+
+    train_dataset = train_dataset_raw.map(
+        process_func_with_tokenizer,
+        remove_columns=train_dataset_raw.column_names
+    )
+    eval_dataset = eval_dataset_raw.map(
+        process_func_with_tokenizer,
+        remove_columns=eval_dataset_raw.column_names
+    )
+
+    # 4. 设置LoRA
+    print("设置LoRA...")
+    model = setup_lora(model)
+
+    # 5. 配置训练参数 - 优化为10小时
+    print("配置训练参数...")
+    training_args = TrainingArguments(
+        output_dir="./output_Qwen_NER_10h",
+        per_device_train_batch_size=1,  # 最小batch size以适应CPU
+        per_device_eval_batch_size=1,
+        gradient_accumulation_steps=4,  # 减少累积步数
+        logging_steps=20,               # 更频繁的日志记录
+        do_eval=True,
+        eval_steps=100,                 # 评估频率
+        num_train_epochs=2,             # 减少训练轮数
+        save_steps=200,                 # 保存频率
+        learning_rate=3e-4,             # 稍高的学习率
+        save_on_each_node=True,
+        gradient_checkpointing=True,
+        report_to="none",
+        fp16=False,                     # CPU上禁用半精度
+        dataloader_num_workers=2,       # 减少数据加载线程
+        save_total_limit=2,             # 限制保存模型数量
+        warmup_ratio=0.05,              # 减少warmup比例
+        weight_decay=0.01,
+    )
+
+    # 6. 创建Trainer并开始训练
+    print("开始训练...")
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_dataset,
+        eval_dataset=eval_dataset,
+        data_collator=DataCollatorForTokenClassification(
+            tokenizer=tokenizer,
+            padding=True,
+            max_length=128
+        ),
+        compute_metrics=compute_metrics,
+    )
+
+    trainer.train()
+
+    # 7. 保存模型
+    print("保存模型...")
+    trainer.save_model()
+    tokenizer.save_pretrained("./output_Qwen_NER_10h")
+
+    print("训练完成！")
+
+
+# 9.测试预测函数
+def test_predictions():
+    """测试模型预测"""
+    # 1. 初始化模型和tokenizer
+    print("加载已训练的模型和tokenizer...")
+    model_path = "../models/Qwen/Qwen3-0.6B"  # 请根据实际路径调整
+
+    # 检查是否存在训练好的模型
+    if os.path.exists("./output_Qwen_NER_10h") and os.path.exists("./output_Qwen_NER_10h/adapter_config.json"):
+        # 加载基础模型
+        tokenizer, base_model = initialize_model_and_tokenizer(model_path)
+        # 加载LoRA权重
+        try:
+            model = PeftModel.from_pretrained(base_model, "./output_Qwen_NER_10h")
+            print("成功加载LoRA权重")
+        except Exception as e:
+            print(f"加载LoRA权重失败: {e}")
+            model = base_model
+    else:
+        print("使用预训练模型（未找到训练好的模型）")
+        tokenizer, model = initialize_model_and_tokenizer(model_path)
+
+    # 2. 测试预测
+    print("测试预测...")
+    test_sentences = [
+        '今天我约了王浩在恭王府吃饭，晚上在天安门逛逛。',
+        '人工智能是未来的希望，也是中国和美国的冲突点。',
+        '明天我们一起在海淀吃个饭吧，把叫刘涛和王华也叫上。',
+        '同煤集团同生安平煤业公司发生井下安全事故 19名矿工遇难',
+        '山东省政府办公厅就平邑县玉荣商贸有限公司石膏矿坍塌事故发出通报',
+        '[新闻直播间]黑龙江:龙煤集团一煤矿发生火灾事故'
+    ]
+
+    for sentence in test_sentences:
+        try:
+            print(f"\n=== 处理句子: {sentence} ===")
+            entities = predict_entities(model, tokenizer, sentence, device)
+            print(f"识别到的实体: {entities}")
+            if entities:
+                for entity, entity_type in entities:
+                    print(f"  {entity_type}: {entity}")
+            else:
+                print("  未识别到实体")
+            print()
+        except Exception as e:
+            print(f"处理句子时出错: {sentence}")
+            print(f"错误信息: {e}")
+            import traceback
+            traceback.print_exc()
+            print()
+
+
+# 10.主函数
+def main():
+    """主执行函数"""
+    '''
+        1.数据 DataSet
+        2.模型 Model &&  Tokenizer
+        3.预处理 Process
+        4.LoRA
+        5.Arguments
+        6.Trainer
+        7.Save
+    '''
+    train_model()  # 训练模型
+    test_predictions()  # 测试预测
+
+
+if __name__ == "__main__":
+    main()
