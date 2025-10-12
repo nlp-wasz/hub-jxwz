@@ -1,0 +1,78 @@
+#Homework01
+# sqlite_orm_demo.py
+from sqlalchemy import create_engine, Column, Integer, String, Text
+from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import sessionmaker
+
+Base = declarative_base()
+
+class Document(Base):
+    __tablename__ = 'documents'
+    id = Column(Integer, primary_key=True)
+    title = Column(String(100))
+    content = Column(Text)
+
+engine = create_engine('sqlite:///rag_demo.db')
+Base.metadata.create_all(engine)
+
+Session = sessionmaker(bind=engine)
+session = Session()
+
+# 插入数据
+doc1 = Document(title="RAG介绍", content="RAG是一种检索增强生成技术...")
+doc2 = Document(title="向量数据库", content="向量数据库用于存储高维向量...")
+session.add_all([doc1, doc2])
+session.commit()
+
+# 查询数据
+docs = session.query(Document).all()
+for doc in docs:
+    print(f"{doc.id}: {doc.title} - {doc.content[:50]}...")
+
+
+
+# es_demo.py
+from elasticsearch import Elasticsearch
+from elasticsearch.helpers import bulk
+
+es = Elasticsearch(["http://localhost:9200"])
+
+documents = [
+    {"_index": "rag_docs", "_id": 1, "title": "RAG介绍", "content": "RAG是一种检索增强生成技术..."},
+    {"_index": "rag_docs", "_id": 2, "title": "向量数据库", "content": "向量数据库用于存储高维向量..."}
+]
+
+# 插入数据
+bulk(es, documents)
+
+# 检索数据
+result = es.search(index="rag_docs", body={"query": {"match": {"content": "向量数据库"}}})
+for hit in result['hits']['hits']:
+    print(f"{hit['_id']}: {hit['_source']['title']} - {hit['_source']['content'][:50]}...")
+
+
+
+#Homework02
+# rag_tfidf_demo.py
+from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.metrics.pairwise import cosine_similarity
+
+documents = [
+    "RAG是一种检索增强生成技术",
+    "向量数据库用于存储高维向量",
+    "BERT是一种预训练语言模型",
+    "Elasticsearch是一个分布式搜索引擎"
+]
+
+query = "什么是向量数据库？"
+
+vectorizer = TfidfVectorizer()
+tfidf_matrix = vectorizer.fit_transform(documents)
+query_vec = vectorizer.transform([query])
+
+cosine_similarities = cosine_similarity(query_vec, tfidf_matrix).flatten()
+related_doc_index = cosine_similarities.argmax()
+
+print(f"Query: {query}")
+print(f"最相关的文档: {documents[related_doc_index]}")
+print(f"相似度: {cosine_similarities[related_doc_index]:.2f}")

@@ -1,0 +1,13 @@
+RequestsDependencyWarning: Unable to find acceptable character detection dependency (chardet or charset_normalizer).
+  warnings.warn(
+/Users/bytedance/Documents/LLM/week06/第06周：RAG工程化实现/课件/Week06/Week06/06_ES进阶简洁版.py:14: DeprecationWarning: The 'http_auth' parameter is deprecated. Use 'basic_auth' or 'bearer_auth' parameters instead
+  es = Elasticsearch(
+连接成功
+索引已创建
+数据已插入
+手机商品: 2个
+价格3000-8000: 3个
+品牌统计:
+  Apple: 2
+  Huawei: 1
+  Xiaomi: 1

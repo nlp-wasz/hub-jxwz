@@ -1,0 +1,46 @@
+This is ApacheBench, Version 2.3 <$Revision: 1913912 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 0.0.0.0 (be patient).....done
+
+
+Server Software:        uvicorn
+Server Hostname:        0.0.0.0
+Server Port:            8000
+
+Document Path:          /v1/text-cls/bert
+Document Length:        121 bytes
+
+Concurrency Level:      100
+Time taken for tests:   3.915 seconds
+Complete requests:      100
+Failed requests:        10
+   (Connect: 0, Receive: 0, Length: 10, Exceptions: 0)
+Total transferred:      24689 bytes
+Total body sent:        22400
+HTML transferred:       12089 bytes
+Requests per second:    25.54 [#/sec] (mean)
+Time per request:       3915.377 [ms] (mean)
+Time per request:       39.154 [ms] (mean, across all concurrent requests)
+Transfer rate:          6.16 [Kbytes/sec] received
+                        5.59 kb/s sent
+                        11.74 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    1   0.4      1       2
+Processing:   181 2754 490.7   2596    3734
+Waiting:      178 2752 491.4   2595    3734
+Total:        181 2755 490.6   2597    3735
+
+Percentage of the requests served within a certain time (ms)
+  50%   2597
+  66%   2624
+  75%   2739
+  80%   2917
+  90%   3698
+  95%   3723
+  98%   3734
+  99%   3735
+ 100%   3735 (longest request)
