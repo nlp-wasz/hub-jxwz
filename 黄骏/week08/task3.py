@@ -1,7 +1,7 @@
 import uvicorn
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, Field
-from tast2 import extract_ner, NerTask
+from task2 import extract_ner, NerTask
 from typing import Optional
 
 app = FastAPI()
