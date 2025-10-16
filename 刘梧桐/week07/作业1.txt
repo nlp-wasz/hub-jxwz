@@ -1,0 +1,5 @@
+
+
+DeepWalk = 随机游走 + Word2Vec
+
+DeepWalk将Word2Vec应用到图网络，将随机游走序列集合当作文本处理；
