@@ -1,0 +1,249 @@
+# 在Coze控制台创建新的Bot
+Bot名称：JointNLU-Bot
+描述：联合意图识别、领域识别和实体识别
+
+系统提示词：
+"""
+你是一个专业的自然语言理解系统，专门处理用户输入的意图识别、领域识别和实体识别。
+
+## 任务定义
+1. 意图识别：识别用户想要完成什么任务
+2. 领域识别：确定对话所属的知识领域  
+3. 实体识别：提取语句中的关键信息实体
+
+## 输出格式要求
+请严格按照以下JSON格式输出：
+{
+  "intent": "识别的意图",
+  "domain": "识别的领域", 
+  "entities": {
+    "实体类型1": "实体值1",
+    "实体类型2": "实体值2"
+  }
+}
+
+## 可用意图列表
+- play_music: 播放音乐
+- query_weather: 查询天气
+- search_news: 搜索新闻
+- set_reminder: 设置提醒
+- query_time: 查询时间
+- unknown: 未知意图
+
+## 可用领域列表
+- music: 音乐
+- weather: 天气
+- news: 新闻
+- productivity: 效率工具
+- general: 通用领域
+
+## 实体类型
+- song_name: 歌曲名
+- artist: 艺术家
+- city: 城市
+- time: 时间
+- date: 日期
+- topic: 主题
+- location: 位置
+"""
+
+示例对话：
+用户：播放周杰伦的七里香
+助手：{
+  "intent": "play_music",
+  "domain": "music",
+  "entities": {
+    "artist": "周杰伦",
+    "song_name": "七里香"
+  }
+}
+
+用户：明天北京天气怎么样
+助手：{
+  "intent": "query_weather",
+  "domain": "weather",
+  "entities": {
+    "city": "北京",
+    "date": "明天"
+  }
+}
+"""
+
+# 在Coze中创建自定义工具
+工具名称：entity_validator
+功能描述：验证和标准化提取的实体
+
+参数配置：
+- entity_type: 实体类型（城市、时间等）
+- entity_value: 实体值
+- context: 上下文信息
+
+返回格式：
+{
+  "is_valid": true,
+  "normalized_value": "标准化后的值",
+  "confidence": 0.95
+}
+
+工具名称：intent_confidence
+功能描述：计算意图识别的置信度
+
+参数：
+- user_input: 用户输入文本
+- detected_intent: 检测到的意图
+
+返回：
+{
+  "confidence_score": 0.92,
+  "alternative_intents": [
+    {"intent": "alternative1", "score": 0.3}
+  ]
+}
+
+工作流名称：JointNLU_Workflow
+
+步骤：
+1. 输入预处理
+   - 文本清洗
+   - 分词处理（使用Coze内置NLU能力）
+
+2. 多任务联合识别
+   - 调用大模型进行意图、领域、实体联合识别
+   - 使用few-shot learning增强准确性
+
+3. 结果验证和后处理
+   - 实体标准化
+   - 置信度计算
+   - 格式验证
+
+4. 输出格式化
+   - 生成标准JSON响应
+
+节点1：文本预处理
+类型：代码节点
+代码内容：
+def preprocess_text(text):
+    # 文本清洗
+    cleaned_text = text.strip().lower()
+    # 简单分词（Coze会自动处理）
+    return cleaned_text
+
+节点2：联合识别
+类型：大模型节点
+提示词：使用配置的系统提示词
+模型选择：GPT-4或类似大模型
+
+节点3：结果验证
+类型：代码节点
+代码内容：
+def validate_result(result):
+    try:
+        # 验证JSON格式
+        import json
+        parsed = json.loads(result)
+
+        # 验证必需字段
+        required_fields = ['intent', 'domain', 'entities']
+        for field in required_fields:
+            if field not in parsed:
+                return False, f"Missing field: {field}"
+
+        return True, parsed
+    except Exception as e:
+        return False, str(e)
+
+测试用例 = [
+    {
+        "input": "播放周杰伦的晴天",
+        "expected": {
+            "intent": "play_music",
+            "domain": "music",
+            "entities": {"artist": "周杰伦", "song_name": "晴天"}
+        }
+    },
+    {
+        "input": "明天上海会下雨吗",
+        "expected": {
+            "intent": "query_weather", 
+            "domain": "weather",
+            "entities": {"city": "上海", "date": "明天"}
+        }
+    },
+    {
+        "input": "帮我设置明天上午9点的会议提醒",
+        "expected": {
+            "intent": "set_reminder",
+            "domain": "productivity", 
+            "entities": {"time": "上午9点", "date": "明天"}
+        }
+    }
+]
+
+优化方法：
+1. 增加few-shot示例数量
+2. 使用更具体实体类型定义
+3. 添加实体同义词词典
+4. 配置意图优先级
+5. 设置fallback机制
+
+发布配置：
+- 渠道：API、Webhook、飞书、微信等
+- 权限：根据需求设置
+- 版本管理：支持多版本测试
+
+import requests
+import json
+
+def call_joint_nlu(text):
+    # Coze提供的API端点
+    url = "https://api.coze.cn/v1/your-bot-endpoint"
+
+    headers = {
+        "Authorization": "Bearer YOUR_ACCESS_TOKEN",
+        "Content-Type": "application/json"
+    }
+
+    data = {
+        "message": text,
+        "user_id": "unique_user_id"
+    }
+
+    response = requests.post(url, headers=headers, json=data)
+    result = response.json()
+
+    # 解析Coze返回的NLU结果
+    nlu_result = json.loads(result['response'])
+    return nlu_result
+
+# 使用示例
+user_input = "播放林俊杰的江南"
+result = call_joint_nlu(user_input)
+print(f"意图: {result['intent']}")
+print(f"领域: {result['domain']}")
+print(f"实体: {result['entities']}")
+
+# 在系统提示词中添加上下文处理
+"""
+## 上下文处理规则
+- 如果用户指代前文提到的实体，需要结合上下文理解
+- 对于省略的查询，使用上下文补全信息
+- 维护对话状态跟踪
+"""
+
+示例：
+上一轮：查询北京天气
+当前输入：那上海呢？
+识别结果：
+{
+  "intent": "query_weather",
+  "domain": "weather", 
+  "entities": {
+    "city": "上海"
+  }
+}
+
+# 使用Coze的记忆功能维护对话状态
+记忆配置：
+- 用户偏好记忆
+- 对话历史记录
+- 实体链接信息
