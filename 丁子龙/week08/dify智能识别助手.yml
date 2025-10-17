@@ -1,0 +1,309 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 智能识别助手
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.51@13f8077e715717becc39ecfb76f58a79a9dd5872f5093e896eea9b4364c00f79
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1760498136074-source-1760498161359-target
+      source: '1760498136074'
+      sourceHandle: source
+      target: '1760498161359'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1760498136074-source-1760498165925-target
+      source: '1760498136074'
+      sourceHandle: source
+      target: '1760498165925'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1760498136074-source-1760498169813-target
+      source: '1760498136074'
+      sourceHandle: source
+      target: '1760498169813'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1760498161359-source-1760498501467-target
+      source: '1760498161359'
+      sourceHandle: source
+      target: '1760498501467'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1760498165925-source-1760498501467-target
+      source: '1760498165925'
+      sourceHandle: source
+      target: '1760498501467'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1760498169813-source-1760498501467-target
+      source: '1760498169813'
+      sourceHandle: source
+      target: '1760498501467'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: text
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: text
+      height: 90
+      id: '1760498136074'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760498136074'
+          - text
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen-max
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: 90ed44e2-10a4-4d11-bedd-1de1960c6cfd
+          role: system
+          text: "对下面的文本进行实体识别。其中slots包含'code,Src,startDate_dateOrig,film,endLoc_city,artistRole,location_country,location_area,author,startLoc_city,season,dishNamet,media,datetime_date,episode,teleOperator,questionWord,receiver,ingredient,name,startDate_time,startDate_date,location_province,endLoc_poi,artist,dynasty,area,location_poi,relIssue,Dest,content,keyword,target,startLoc_area,tvchannel,type,song,queryField,awayName,headNum,homeName,decade,payment,popularity,tag,startLoc_poi,date,startLoc_province,endLoc_province,location_city,absIssue,utensil,scoreDescr,dishName,endLoc_area,resolution,yesterday,timeDescr,category,subfocus,theatre,datetime_time'。不需要输出任何其他的信息。\n\
+            示例\n【输入：无锡到阜阳怎么坐汽车？\n输出：\n    {\n      \"Dest\": \"阜阳\",\n      \"Src\"\
+            : \"无锡\"\n    }】\n输入：{{#1760498136074.text#}}\n输出：“”\n  \n"
+        selected: false
+        title: LLM-实体识别
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1760498161359'
+      position:
+        x: 425
+        y: 116
+      positionAbsolute:
+        x: 425
+        y: 116
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760498136074'
+          - text
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen-max
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: 307bedf2-3e72-49f4-b56a-f0e5a4a0a27c
+          role: system
+          text: "对下面的文本进行领域识别。其中domain包含'music,app,radio,lottery,stock,novel,weather,match,map,website,news,message,contacts,translation,tvchannel,cinemas,cookbook,joke,riddle,telephone,video,train,poetry,flight,epg,health,email,bus,story'。不需要输出任何其他的信息。\n\
+            示例：【\n输入：无锡到阜阳怎么坐汽车？\n输出：   \"bus\"】\n\n输入：{{#1760498136074.text#}}\n\
+            输出：“”\n    \n   \n  \n"
+        selected: false
+        title: LLM 2-领域识别
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1760498165925'
+      position:
+        x: 425
+        y: 301
+      positionAbsolute:
+        x: 425
+        y: 301
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760498136074'
+          - text
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen-max
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: 02695b6d-c717-4a53-bb99-8e6dfa53dc40
+          role: system
+          text: "对下面的文本进行意图识别。其中intent包含'OPEN，SEARCH，REPLAY_ALL，NUMBER_QUERY，DIAL，CLOSEPRICE_QUERY，SEND，LAUNCH，PLAY，REPLY，RISERATE_QUERY，DOWNLOAD，QUERY，LOOK_BACK，CREATE，FORWARD，DATE_QUERY，SENDCONTACTS，DEFAULT，TRANSLATION，VIEW，NaN，ROUTE，POSITION'。不需要输出任何其他的信息。\n\
+            示例：\n【\n输入：无锡到阜阳怎么坐汽车？\n输出： \"QUERY\"】\n输入：{{#1760498136074.text#}}\n\
+            输出：“”\n   "
+        selected: false
+        title: LLM 3-意图识别
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 90
+      id: '1760498169813'
+      position:
+        x: 432
+        y: 464
+      positionAbsolute:
+        x: 432
+        y: 464
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1760498169813'
+          - text
+          value_type: string
+          variable: intents
+        - value_selector:
+          - '1760498165925'
+          - text
+          value_type: string
+          variable: domains
+        - value_selector:
+          - '1760498161359'
+          - text
+          value_type: string
+          variable: slots
+        selected: false
+        title: 结束
+        type: end
+      height: 145
+      id: '1760498501467'
+      position:
+        x: 1126.737720409514
+        y: 251.989851456917
+      positionAbsolute:
+        x: 1126.737720409514
+        y: 251.989851456917
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 28.1620900929245
+      y: -41.19978850175039
+      zoom: 1.3947436663504036
