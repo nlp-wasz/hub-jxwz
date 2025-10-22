@@ -1,0 +1,184 @@
+app:
+  description: 你是一个可以生成代码、获取时间、语音文本互转的Agent工具。
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: agent-chat
+  name: 多模态Agent
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.26@4f1c4ded3d189719b7dd54e9d4e5b26f724f3632f3dfaa299491b42accc112c8
+    version: null
+kind: app
+model_config:
+  agent_mode:
+    enabled: true
+    max_iteration: 10
+    prompt: null
+    strategy: function_call
+    tools:
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: code
+      provider_name: code
+      provider_type: builtin
+      tool_label: 代码解释器
+      tool_name: simple_code
+      tool_parameters:
+        code: ''
+        language: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: time
+      provider_name: time
+      provider_type: builtin
+      tool_label: 获取当前时间
+      tool_name: current_time
+      tool_parameters:
+        format: ''
+        timezone: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: time
+      provider_name: time
+      provider_type: builtin
+      tool_label: 时间戳转换
+      tool_name: timestamp_to_localtime
+      tool_parameters:
+        timestamp: ''
+        timezone: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: time
+      provider_name: time
+      provider_type: builtin
+      tool_label: 时区转换
+      tool_name: timezone_conversion
+      tool_parameters:
+        current_time: ''
+        current_timezone: ''
+        target_timezone: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: time
+      provider_name: time
+      provider_type: builtin
+      tool_label: 星期几计算器
+      tool_name: weekday
+      tool_parameters:
+        day: ''
+        month: ''
+        year: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: time
+      provider_name: time
+      provider_type: builtin
+      tool_label: 获取时间戳
+      tool_name: localtime_to_timestamp
+      tool_parameters:
+        localtime: ''
+        timezone: ''
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: audio
+      provider_name: audio
+      provider_type: builtin
+      tool_label: Text To Speech
+      tool_name: tts
+      tool_parameters:
+        model: langgenius/tongyi/tongyi#tts-1
+        text: null
+        voice#langgenius/tongyi/tongyi#tts-1: sambert-zhinan-v1
+    - enabled: true
+      isDeleted: false
+      notAuthor: false
+      provider_id: audio
+      provider_name: audio
+      provider_type: builtin
+      tool_label: Speech To Text
+      tool_name: asr
+      tool_parameters:
+        audio_file: null
+        model: langgenius/tongyi/tongyi#paraformer-realtime-v1
+  annotation_reply:
+    enabled: false
+  chat_prompt_config: {}
+  completion_prompt_config: {}
+  dataset_configs:
+    datasets:
+      datasets:
+      - dataset:
+          enabled: true
+          id: 35c2afd8-902c-4a4c-a88b-3755d6cf59d8
+    reranking_enable: true
+    reranking_mode: reranking_model
+    reranking_model:
+      reranking_model_name: gte-rerank
+      reranking_provider_name: langgenius/tongyi/tongyi
+    retrieval_model: multiple
+    top_k: 4
+  dataset_query_variable: ''
+  external_data_tools: []
+  file_upload:
+    allowed_file_extensions:
+    - .JPG
+    - .JPEG
+    - .PNG
+    - .GIF
+    - .WEBP
+    - .SVG
+    - .MP4
+    - .MOV
+    - .MPEG
+    - .WEBM
+    allowed_file_types:
+    - image
+    - video
+    allowed_file_upload_methods:
+    - remote_url
+    - local_file
+    enabled: true
+    image:
+      detail: high
+      enabled: true
+      number_limits: 3
+      transfer_methods:
+      - remote_url
+      - local_file
+    number_limits: 3
+  model:
+    completion_params:
+      stop: []
+    mode: chat
+    name: qwen3-235b-a22b-thinking-2507
+    provider: langgenius/tongyi/tongyi
+  more_like_this:
+    enabled: false
+  opening_statement: 我是一个可以生成代码、查询时间、语音文本互转的AI
+  pre_prompt: 你是一个可以生成代码、获取时间、语音文本互转的Agent工具。
+  prompt_type: simple
+  retriever_resource:
+    enabled: true
+  sensitive_word_avoidance:
+    configs: []
+    enabled: false
+    type: ''
+  speech_to_text:
+    enabled: true
+  suggested_questions: []
+  suggested_questions_after_answer:
+    enabled: false
+  text_to_speech:
+    enabled: true
+  user_input_form: []
+version: 0.4.0
