@@ -1,0 +1,213 @@
+app:
+  description: 输入天气、温度、湿度，智能给出穿衣建议
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 穿衣智能指南
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.56@42a5fb7bc09b2f14f9d19f0ac79bec42c3c50dba07a52bf1b6d3abcd6906c739
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1761098758354-source-1761100109610-target
+      source: '1761098758354'
+      sourceHandle: source
+      target: '1761100109610'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1761100109610-source-1761099113235-target
+      source: '1761100109610'
+      sourceHandle: source
+      target: '1761099113235'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 天气
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: weather
+        - default: ''
+          hint: ''
+          label: 最高温度（摄氏度）
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: number
+          variable: max_temperature
+        - default: ''
+          hint: ''
+          label: 最低温度（摄氏度）
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: number
+          variable: min_temperature
+        - default: ''
+          hint: ''
+          label: 湿度（百分比）
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: number
+          variable: humidity
+      height: 166
+      id: '1761098758354'
+      position:
+        x: 79
+        y: 281
+      positionAbsolute:
+        x: 79
+        y: 281
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        outputs:
+        - value_selector:
+          - '1761100109610'
+          - text
+          value_type: string
+          variable: text
+        selected: false
+        title: 结束
+        type: end
+      height: 88
+      id: '1761099113235'
+      position:
+        x: 681
+        y: 281
+      positionAbsolute:
+        x: 681
+        y: 281
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params: {}
+          mode: chat
+          name: qwen-plus-latest
+          provider: langgenius/tongyi/tongyi
+        prompt_config:
+          jinja2_variables: []
+        prompt_template:
+        - edition_type: basic
+          id: 215a107e-7c8e-4e63-8d59-e1e2877d9931
+          role: system
+          text: 你是一个穿衣专家，能够根据当天的天气、温度、湿度等信息，提供穿衣指南。
+        - id: 124299f4-0354-4c15-9d4e-91d870318373
+          role: user
+          text: '天气：{{#1761098758354.weather#}}
+
+            最高温度：{{#1761098758354.max_temperature#}}摄氏度
+
+            最低温度：{{#1761098758354.min_temperature#}}摄氏度
+
+            湿度：{{#1761098758354.humidity#}}%'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1761100109610'
+      position:
+        x: 381
+        y: 281
+      positionAbsolute:
+        x: 381
+        y: 281
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 227
+      y: 70
+      zoom: 1
+  rag_pipeline_variables: []
