@@ -1,0 +1,238 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 穿衣指南_对话流
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: answer
+      id: 1761222369928-source-1761222378650-target
+      source: '1761222369928'
+      sourceHandle: source
+      target: '1761222378650'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1761060218836-source-llm-target
+      source: '1761060218836'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: template-transform
+      id: llm-source-1761225295894-target
+      source: llm
+      sourceHandle: source
+      target: '1761225295894'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 54
+      id: '1761060218836'
+      position:
+        x: 274.13277561503565
+        y: 282
+      positionAbsolute:
+        x: 274.13277561503565
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: today‘s information
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            response_format: json_object
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: 629cd235-fd84-4063-9339-ccbecc714c0e
+          role: system
+          text: '请告诉我{{#sys.query#}}这天的温度、天气、湿度信息帮助我做出穿什么衣服的决定。返回的信息采用json格式回复，只回复我需要的信息。参考：
+
+            {“温度”:“30摄氏度”,
+
+            “天气”:“阴转多云”,
+
+            "湿度":"xx"，
+
+            }'
+        - id: 98fda7b2-9f5d-4536-a6ce-d43728e359ba
+          role: user
+          text: ''
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 126
+      id: llm
+      position:
+        x: 622.5436628224558
+        y: 282
+      positionAbsolute:
+        x: 622.5436628224558
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: e3d97b3a-f15c-4c7c-b025-44012f273ecb
+          role: system
+          text: 这是天气情况{{#1761224689534.s#}}，请根据这个天气情况为我提供穿衣指南
+        selected: false
+        title: LLM 3
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1761222369928'
+      position:
+        x: 1268.1647968133302
+        y: 282
+      positionAbsolute:
+        x: 1268.1647968133302
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1761222369928.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 103
+      id: '1761222378650'
+      position:
+        x: 1612.0807973467508
+        y: 282
+      positionAbsolute:
+        x: 1612.0807973467508
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        selected: true
+        template: '{{ arg1 }}'
+        title: 模板转换
+        type: template-transform
+        variables:
+        - value_selector:
+          - llm
+          - text
+          variable: arg1
+      height: 54
+      id: '1761225295894'
+      position:
+        x: 926.5436628224558
+        y: 282
+      positionAbsolute:
+        x: 926.5436628224558
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 167.72949122485034
+      y: 263.05220830591617
+      zoom: 1.148698354997035
