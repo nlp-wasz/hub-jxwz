@@ -1,0 +1,261 @@
+app:
+  description: Ask question about dify dev and deploy.
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: qa_dify
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/zhipuai:0.0.15@0fe895dabd88378b75fbd5a8b437b329094f9867de3db901dfee31945b30bd08
+    version: null
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: infiniai/infiniai:0.0.3@a4873acb73bd864d0497d0a2f59a4bdcac248c9312fe1e1a643d74c4bd7e0cf8
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1760969415207-source-1760969495131-target
+      source: '1760969415207'
+      sourceHandle: source
+      target: '1760969495131'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1760969495131-source-1761100459807-target
+      selected: false
+      source: '1760969495131'
+      sourceHandle: source
+      target: '1761100459807'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: end
+      id: 1761100459807-source-1761101027134-target
+      source: '1761100459807'
+      sourceHandle: source
+      target: '1761101027134'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: Start
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: query
+          max_length: 256
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: query
+      height: 86
+      id: '1760969415207'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        dataset_ids:
+        - X/diUcwQ9JDOvxH5nJzByl4CoNWvOzN+b5T4J3WZTw+/c3HrUxajpomXbEu7o/T2
+        desc: Allows you to query text content related to user questions from the
+          knowledgebase relating to dify.
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: bge-reranker-v2-m3
+            provider: infiniai/infiniai/infiniai
+          score_threshold: null
+          top_k: 4
+          weights:
+            keyword_setting:
+              keyword_weight: 0
+            vector_setting:
+              embedding_model_name: embedding-2
+              embedding_provider_name: langgenius/zhipuai/zhipuai
+              vector_weight: 1
+            weight_type: customized
+        query_variable_selector:
+        - '1760969415207'
+        - query
+        retrieval_mode: multiple
+        selected: false
+        title: Knowledge Retrieval
+        type: knowledge-retrieval
+      height: 148
+      id: '1760969495131'
+      position:
+        x: 381
+        y: 407
+      positionAbsolute:
+        x: 381
+        y: 407
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760969495131'
+          - result
+        desc: Invoking large language models to answer questions or process natural
+          language
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: glm-4.5
+          provider: langgenius/zhipuai/zhipuai
+        prompt_template:
+        - id: 43d28d10-b84e-4f58-978a-31b80a585340
+          role: system
+          text: "You are a helpful assistant. \nWhen answer to user:\n- If you don't\
+            \ know, just say that you don't know.\n- If you don't know when you are\
+            \ not sure, ask for clarification.Avoid mentioning that you obtained the\
+            \ information from the context.\nAnd answer according to the language\
+            \ of the user's question.\n"
+        - id: 1632a593-8941-4ba1-bc52-1c4de8657bbf
+          role: user
+          text: 'Query:{{#1760969415207.query#}}
+
+
+            Retrieved knowledge：
+
+            {{#each result}}
+
+            ---
+
+            Title：{{this.title}}
+
+            Content：{{this.content}}
+
+            {{/each}}
+
+
+            Please answer based on the above knowledge.{{#context#}}'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 146
+      id: '1761100459807'
+      position:
+        x: 891.0959553432509
+        y: 555.743496760589
+      positionAbsolute:
+        x: 891.0959553432509
+        y: 555.743496760589
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        outputs:
+        - value_selector:
+          - '1761100459807'
+          - text
+          value_type: string
+          variable: text
+        selected: false
+        title: End 2
+        type: end
+      height: 86
+      id: '1761101027134'
+      position:
+        x: 1218.1372098548645
+        y: 555.743496760589
+      positionAbsolute:
+        x: 1218.1372098548645
+        y: 555.743496760589
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: -1175.752402433899
+      y: -371.73188164883743
+      zoom: 1.3056206637371084
+  rag_pipeline_variables: []
