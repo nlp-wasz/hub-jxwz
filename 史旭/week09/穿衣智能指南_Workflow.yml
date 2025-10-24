@@ -1,0 +1,327 @@
+app:
+  description: 穿衣智能指南
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 穿衣智能指南_Workflow
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: template-transform
+      id: 1761209986457-source-1761210199807-target
+      source: '1761209986457'
+      sourceHandle: source
+      target: '1761210199807'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: template-transform
+        targetType: end
+      id: 1761210199807-source-1761210119491-target
+      source: '1761210199807'
+      sourceHandle: source
+      target: '1761210119491'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1761211295119-source-1761209986457-target
+      source: '1761211295119'
+      sourceHandle: source
+      target: '1761209986457'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: template-transform
+      id: 1761209982814-source-1761211330357-target
+      source: '1761209982814'
+      sourceHandle: source
+      target: '1761211330357'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: template-transform
+        targetType: knowledge-retrieval
+      id: 1761211330357-source-1761211295119-target
+      source: '1761211330357'
+      sourceHandle: source
+      target: '1761211295119'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: 天气
+          max_length: 48
+          options: []
+          required: true
+          type: text-input
+          variable: weather
+        - label: 气温
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: temperature
+        - label: 湿度
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: humidity
+      height: 141
+      id: '1761209982814'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1761211295119'
+          - result
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen-max
+          provider: tongyi
+        prompt_template:
+        - id: d47731d5-1fb7-42bb-b7d7-e2c4e621be84
+          role: system
+          text: '你是一个气候专家，根据用户提供的天气、气温、湿度等信息，给出详细的穿衣建议和指南。
+
+
+            知识检索结果：{{#context#}}'
+        - id: 0d314ef3-9e9d-43d1-bd97-5377fb1b1c85
+          role: user
+          text: '天气：{{#1761209982814.weather#}}
+
+
+            气温：{{#1761209982814.temperature#}}
+
+
+            湿度：{{#1761209982814.humidity#}}'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 97
+      id: '1761209986457'
+      position:
+        x: 983
+        y: 282
+      positionAbsolute:
+        x: 983
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1761210199807'
+          - output
+          variable: text
+        selected: false
+        title: 结束
+        type: end
+      height: 89
+      id: '1761210119491'
+      position:
+        x: 1586
+        y: 282
+      positionAbsolute:
+        x: 1586
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        selected: false
+        template: "天气：{{ weather }}\r\n\r\n气温：{{ temperature }}\r\n\r\n湿度：{{ humidity\
+          \ }}\r\n\r\n穿衣建议：{{ text }}"
+        title: 模板转换
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1761209982814'
+          - weather
+          variable: weather
+        - value_selector:
+          - '1761209982814'
+          - temperature
+          variable: temperature
+        - value_selector:
+          - '1761209982814'
+          - humidity
+          variable: humidity
+        - value_selector:
+          - '1761209986457'
+          - text
+          variable: text
+      height: 53
+      id: '1761210199807'
+      position:
+        x: 1286
+        y: 282
+      positionAbsolute:
+        x: 1286
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        dataset_ids:
+        - 8ec3ed7a-f380-48e5-a8ec-75c00aa287f6
+        desc: ''
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: gte-rerank
+            provider: tongyi
+          score_threshold: null
+          top_k: 4
+        query_variable_selector:
+        - '1761211330357'
+        - output
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 91
+      id: '1761211295119'
+      position:
+        x: 683
+        y: 282
+      positionAbsolute:
+        x: 683
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    - data:
+        desc: ''
+        selected: false
+        template: "天气：{{ weather }}\r\n\r\n气温：{{ temperature }}\r\n\r\n湿度：{{ humidity\
+          \ }}"
+        title: 模板转换 2
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1761209982814'
+          - weather
+          variable: weather
+        - value_selector:
+          - '1761209982814'
+          - temperature
+          variable: temperature
+        - value_selector:
+          - '1761209982814'
+          - humidity
+          variable: humidity
+      height: 53
+      id: '1761211330357'
+      position:
+        x: 383
+        y: 282
+      positionAbsolute:
+        x: 383
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 243
+    viewport:
+      x: -849.5
+      y: 5.5
+      zoom: 1
