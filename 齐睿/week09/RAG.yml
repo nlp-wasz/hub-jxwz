@@ -1,0 +1,290 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: RAG
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/siliconflow:0.0.29@1e8f0b4a32c07d5e192847e4cd57384dcf196f35c667670ca7f00e18a8ead4e9
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: 1761140045294-llm
+      source: '1761140045294'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: knowledge-retrieval
+      id: llm-source-1761140246050-target
+      source: llm
+      sourceHandle: source
+      target: '1761140246050'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1761140246050-source-17611402606790-target
+      source: '1761140246050'
+      sourceHandle: source
+      target: '17611402606790'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 17611402606790-source-answer-target
+      source: '17611402606790'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 51
+      id: '1761140045294'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Pro/deepseek-ai/DeepSeek-V3
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: dc88c674-6932-408d-8298-e10bc121f289
+          role: system
+          text: '请你根据用户问题进行问题改写，将一个问题改写成为三个问题，注意仅限于改写，而不是回答用户提问，该改写后问题用于后续相关检索。
+
+            用户问题：{{#sys.query#}}
+
+            【注意】
+
+            你只需要改写问题，不要对问题进行回答。请按照要求完成任务。'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: llm
+      position:
+        x: 383
+        y: 282
+      positionAbsolute:
+        x: 383
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '【问题改写】：
+
+          {{#llm.text#}}
+
+          【最终回答】：
+
+          {{#17611402606790.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 121
+      id: answer
+      position:
+        x: 1241
+        y: 273
+      positionAbsolute:
+        x: 1241
+        y: 273
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        dataset_ids:
+        - bOQicyYytHZs+VPxv8SL80uDUEDqROehJJdpVBcIAg/Chy0UvbdZT92CRz75T4ws
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          reranking_model:
+            model: netease-youdao/bce-reranker-base_v1
+            provider: langgenius/siliconflow/siliconflow
+          top_k: 4
+        query_variable_selector:
+        - llm
+        - text
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 51
+      id: '1761140246050'
+      position:
+        x: 658
+        y: 417
+      positionAbsolute:
+        x: 658
+        y: 417
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1761140246050'
+          - result
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Pro/deepseek-ai/DeepSeek-V3
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: dc88c674-6932-408d-8298-e10bc121f289
+          role: system
+          text: '请你根据用户问题、改写的问题和检索到的信息进行综合回答。
+
+            【用户query】
+
+            {{#sys.query#}}
+
+            【改写的问题】
+
+            {{#llm.text#}}
+
+            【检索数据】
+
+            {{#context#}}'
+        selected: false
+        title: LLM (1)
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '17611402606790'
+      position:
+        x: 943
+        y: 282
+      positionAbsolute:
+        x: 943
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 12.5
+      y: 237
+      zoom: 1
+  rag_pipeline_variables: []
