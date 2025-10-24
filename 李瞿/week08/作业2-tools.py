@@ -96,3 +96,4 @@ async def health_check():
 
 # 启动命令:
 # uvicorn main:app --host 0.0.0.0 --port 8000 --reload
+# python -m uvicorn main:app --host 127.0.0.1 --port 8888 --reload
