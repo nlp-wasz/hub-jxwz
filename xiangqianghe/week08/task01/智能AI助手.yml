@@ -1,0 +1,377 @@
+app:
+  description: 意图识别、领域识别、实体抽取
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 智能AI助手
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/siliconflow:0.0.32@137c05b006714e6885243576cdab3b01479cb320cd78d6282e7a777b013fbefe
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1760631557072-source-1760631606679-target
+      selected: false
+      source: '1760631557072'
+      sourceHandle: source
+      target: '1760631606679'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1760631557072-source-17606319075990-target
+      selected: false
+      source: '1760631557072'
+      sourceHandle: source
+      target: '17606319075990'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1760631557072-source-17606319118770-target
+      selected: false
+      source: '1760631557072'
+      sourceHandle: source
+      target: '17606319118770'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: template-transform
+      id: 1760631606679-source-1760632008334-target
+      source: '1760631606679'
+      sourceHandle: source
+      target: '1760632008334'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: template-transform
+      id: 17606319075990-source-1760632008334-target
+      source: '17606319075990'
+      sourceHandle: source
+      target: '1760632008334'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: template-transform
+      id: 17606319118770-source-1760632008334-target
+      source: '17606319118770'
+      sourceHandle: source
+      target: '1760632008334'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: template-transform
+        targetType: end
+      id: 1760632008334--1760632170998-target
+      source: '1760632008334'
+      sourceHandle: source
+      target: '1760632170998'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 请输出你想了解的内容
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: query
+      height: 87
+      id: '1760631557072'
+      position:
+        x: -22.92161704028578
+        y: 268.804920892271
+      positionAbsolute:
+        x: -22.92161704028578
+        y: 268.804920892271
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760631557072'
+          - query
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-ai/DeepSeek-V3
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: 7c4accae-ea6c-4b16-ae82-2e01afb14c82
+          role: system
+          text: '识别用户的提问领域，划分到如下的类别中，不要有其他输出。
+
+
+            待选的领域类别：music / app / radio / lottery / stock / novel / weather / match
+            / map / website / news / message / contacts / translation / tvchannel
+            / cinemas / cookbook / joke / riddle / telephone / video / train / poetry
+            / flight / epg / health / email / bus / story
+
+
+
+            用户输入：{{#1760631557072.query#}}'
+        selected: false
+        title: 领域识别
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '1760631606679'
+      position:
+        x: 307
+        y: 69
+      positionAbsolute:
+        x: 307
+        y: 69
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760631557072'
+          - query
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-ai/DeepSeek-V3
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: 7c4accae-ea6c-4b16-ae82-2e01afb14c82
+          role: system
+          text: '识别用户的意图，划分到如下的类别中，不要有其他输出。
+
+
+            待选的意图类型：OPEN / SEARCH / REPLAY_ALL / NUMBER_QUERY / DIAL / CLOSEPRICE_QUERY
+            / SEND / LAUNCH / PLAY / REPLY / RISERATE_QUERY / DOWNLOAD / QUERY / LOOK_BACK
+            / CREATE / FORWARD / DATE_QUERY / SENDCONTACTS / DEFAULT / TRANSLATION
+            / VIEW / NaN / ROUTE / POSITION
+
+
+
+
+            用户输入：{{#1760631557072.query#}}'
+        selected: false
+        title: 意图识别
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '17606319075990'
+      position:
+        x: 288.60984178454214
+        y: 268.804920892271
+      positionAbsolute:
+        x: 288.60984178454214
+        y: 268.804920892271
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1760631557072'
+          - query
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Qwen/Qwen3-32B
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: 7c4accae-ea6c-4b16-ae82-2e01afb14c82
+          role: system
+          text: '识别用户的提问实体，划分到如下的类别中，不要有其他输出。
+
+
+            待选的实体标签：code / Src / startDate_dateOrig / film / endLoc_city / artistRole
+            / location_country / location_area / author / startLoc_city / season /
+            dishNamet / media / datetime_date / episode / teleOperator / questionWord
+            / receiver / ingredient / name / startDate_time / startDate_date / location_province
+            / endLoc_poi / artist / dynasty / area / location_poi / relIssue / Dest
+            / content / keyword / target / startLoc_area / tvchannel / type / song
+            / queryField / awayName / headNum / homeName / decade / payment / popularity
+            / tag / startLoc_poi / date / startLoc_province / endLoc_province / location_city
+            / absIssue / utensil / scoreDescr / dishName / endLoc_area / resolution
+            / yesterday / timeDescr / category / subfocus / theatre / datetime_time
+
+
+
+
+            用户输入：{{#1760631557072.query#}}'
+        selected: false
+        title: 实体识别
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '17606319118770'
+      position:
+        x: 282.0414762676813
+        y: 479.6804920892272
+      positionAbsolute:
+        x: 282.0414762676813
+        y: 479.6804920892272
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        selected: false
+        template: "{\r\n    \"domain\":{{ domain }}\r\n    \"intent\":{{ intent }}\r\
+          \n    \"entity\":{{ entity }}\r\n}"
+        title: 模板转换
+        type: template-transform
+        variables:
+        - value_selector:
+          - '1760631606679'
+          - text
+          value_type: string
+          variable: domain
+        - value_selector:
+          - '17606319075990'
+          - text
+          value_type: string
+          variable: intent
+        - value_selector:
+          - '17606319118770'
+          - text
+          value_type: string
+          variable: entity
+      height: 51
+      id: '1760632008334'
+      position:
+        x: 651
+        y: 282
+      positionAbsolute:
+        x: 651
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        outputs:
+        - value_selector:
+          - '1760632008334'
+          - output
+          value_type: string
+          variable: output
+        selected: false
+        title: 结束
+        type: end
+      height: 87
+      id: '1760632170998'
+      position:
+        x: 630.0400697714138
+        y: 548.5405979761247
+      positionAbsolute:
+        x: 630.0400697714138
+        y: 548.5405979761247
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: -105.13225840928004
+      y: 165.50333043264814
+      zoom: 0.7578582832551991
+  rag_pipeline_variables: []
