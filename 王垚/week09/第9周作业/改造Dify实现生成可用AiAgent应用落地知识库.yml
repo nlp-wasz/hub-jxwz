@@ -1,0 +1,220 @@
+app:
+  description: 知识库测试
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 改造Dify实现生成可用AiAgent应用落地知识库
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.26@4f1c4ded3d189719b7dd54e9d4e5b26f724f3632f3dfaa299491b42accc112c8
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1761296592817-source-1761296620665-target
+      selected: false
+      source: '1761296592817'
+      sourceHandle: source
+      target: '1761296620665'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1761296620665-source-1761297114839-target
+      source: '1761296620665'
+      sourceHandle: source
+      target: '1761297114839'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1761297114839-source-1761297301854-target
+      selected: false
+      source: '1761297114839'
+      sourceHandle: source
+      target: '1761297301854'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 51
+      id: '1761296592817'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        dataset_ids:
+        - v44DL3IiDTnJ0KD0QYQEhdODH4Mw5xKJsgUNCIjKrIFxjB1tHhmpr8rNOsdHjmoq
+        desc: ''
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: gte-rerank-v2
+            provider: langgenius/tongyi/tongyi
+          score_threshold: 0.2
+          top_k: 10
+          weights:
+            keyword_setting:
+              keyword_weight: 0.4
+            vector_setting:
+              embedding_model_name: text-embedding-v1
+              embedding_provider_name: langgenius/tongyi/tongyi
+              vector_weight: 0.6
+        query_variable_selector:
+        - sys
+        - query
+        retrieval_mode: multiple
+        selected: true
+        title: 知识检索
+        type: knowledge-retrieval
+      height: 89
+      id: '1761296620665'
+      position:
+        x: 80
+        y: 420
+      positionAbsolute:
+        x: 80
+        y: 420
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1761296620665'
+          - result
+        model:
+          completion_params: {}
+          mode: chat
+          name: qwen-plus-latest
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: da6f6f80-6f88-4fd7-b62b-b843902ec06d
+          role: system
+          text: 我这里有一段关于 Dify 的资料：[{{#context#}} ]。请你依据这段资料回答我的问题。如果资料中没有能回答我问题的相关信息，请明确输出
+            "资料中未涵盖相关内容，无法回答" 。
+        - id: 8a9ec43a-c6e7-46f0-afea-1e77d878852e
+          role: user
+          text: '{{#sys.query#}}'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: '1761297114839'
+      position:
+        x: 72
+        y: 574
+      positionAbsolute:
+        x: 72
+        y: 574
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        answer: '{{#1761297114839.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 102
+      id: '1761297301854'
+      position:
+        x: 72
+        y: 694
+      positionAbsolute:
+        x: 72
+        y: 694
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 1006.1081682492727
+      y: -319.24241692151395
+      zoom: 1.5157165665104004
+  rag_pipeline_variables: []
