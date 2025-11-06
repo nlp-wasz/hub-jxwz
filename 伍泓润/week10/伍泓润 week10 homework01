@@ -1,0 +1,150 @@
+import requests
+import json
+import base64
+
+class QwenVLClassifier:
+    def __init__(self, api_key, endpoint):
+        """
+        初始化Qwen-VL分类器
+        
+        Args:
+            api_key: 阿里云API密钥
+            endpoint: 模型服务端点
+        """
+        self.api_key = api_key
+        self.endpoint = endpoint
+        self.headers = {
+            'Content-Type': 'application/json',
+            'Authorization': f'Bearer {api_key}'
+        }
+    
+    def image_to_base64(self, image_path):
+        """将图片转换为base64编码"""
+        with open(image_path, 'rb') as image_file:
+            encoded_string = base64.b64encode(image_file.read()).decode('utf-8')
+        return encoded_string
+    
+    def classify_image(self, image_path_or_url, prompt="这是什么动物？"):
+        """
+        使用Qwen-VL模型进行图像分类
+        
+        Args:
+            image_path_or_url: 图片路径或URL
+            prompt: 提示词
+            
+        Returns:
+            classification_result: 分类结果
+        """
+        
+        # 构建请求数据
+        if image_path_or_url.startswith('http'):
+            # 如果是URL
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "image": image_path_or_url
+                        },
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        else:
+            # 如果是本地文件
+            image_base64 = self.image_to_base64(image_path_or_url)
+            messages = [
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "image": f"data:image/jpeg;base64,{image_base64}"
+                        },
+                        {
+                            "text": prompt
+                        }
+                    ]
+                }
+            ]
+        
+        payload = {
+            "model": "qwen-vl-plus",  # 根据实际模型名称调整
+            "input": {
+                "messages": messages
+            },
+            "parameters": {
+                "result_format": "message"
+            }
+        }
+        
+        try:
+            # 发送请求
+            response = requests.post(
+                self.endpoint,
+                headers=self.headers,
+                data=json.dumps(payload)
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return self.parse_classification_result(result)
+            else:
+                return f"请求失败，状态码: {response.status_code}, 错误信息: {response.text}"
+                
+        except Exception as e:
+            return f"发生错误: {str(e)}"
+    
+    def parse_classification_result(self, result):
+        """解析分类结果"""
+        try:
+            # 提取模型返回的文本
+            output_text = result['output']['choices'][0]['message']['content']
+            
+            # 简单的关键词匹配来确定是狗还是猫
+            if '狗' in output_text or 'dog' in output_text.lower():
+                return "分类结果: 狗 (Dog)"
+            elif '猫' in output_text or 'cat' in output_text.lower():
+                return "分类结果: 猫 (Cat)"
+            else:
+                return f"不确定的分类，模型返回: {output_text}"
+                
+        except KeyError as e:
+            return f"解析结果时出错: {str(e)}, 完整响应: {result}"
+
+# 使用示例
+def main():
+    # 配置参数 - 需要从阿里云控制台获取
+    API_KEY = "your_api_key_here"  # 替换为您的API密钥
+    ENDPOINT = "your_endpoint_here"  # 替换为您的服务端点
+    
+    # 创建分类器实例
+    classifier = QwenVLClassifier(API_KEY, ENDPOINT)
+    
+    # 测试图片路径或URL
+    test_images = [
+        "path/to/your/dog_image.jpg",  # 替换为您的狗图片路径
+        "path/to/your/cat_image.jpg",  # 替换为您的猫图片路径
+        "https://example.com/dog.jpg"  # 或者使用图片URL
+    ]
+    
+    # 自定义提示词
+    prompt = "请识别图片中的动物是狗还是猫？只回答狗或猫。"
+    
+    # 对每张图片进行分类
+    for image_path in test_images:
+        print(f"正在分析图片: {image_path}")
+        result = classifier.classify_image(image_path, prompt)
+        print(result)
+        print("-" * 50)
+
+# 简单版本 - 如果您只需要基础功能
+def simple_classification(api_key, endpoint, image_path):
+    """简化版本的分类函数"""
+    classifier = QwenVLClassifier(api_key, endpoint)
+    result = classifier.classify_image(image_path)
+    return result
+
+if __name__ == "__main__":
+    main()
