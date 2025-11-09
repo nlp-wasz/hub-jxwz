@@ -1,0 +1,238 @@
+import torch
+import torch.nn as nn
+from PIL import Image
+import requests
+from io import BytesIO
+import numpy as np
+import matplotlib.pyplot as plt
+from transformers import ChineseCLIPProcessor, ChineseCLIPModel
+import warnings
+warnings.filterwarnings('ignore')
+
+class ChineseCLIPDemo:
+    def __init__(self, model_name="OFA-Sys/chinese-clip-vit-base-patch16"):
+        """
+        初始化中文CLIP模型
+        
+        Args:
+            model_name: 模型名称，默认为基础版
+        """
+        print("正在加载中文CLIP模型...")
+        self.device = "cpu"  # 使用CPU
+        self.model = ChineseCLIPModel.from_pretrained(model_name).to(self.device)
+        self.processor = ChineseCLIPProcessor.from_pretrained(model_name)
+        print("模型加载完成!")
+    
+    def load_image_from_url(self, url):
+        """从URL加载图片"""
+        try:
+            response = requests.get(url, timeout=10)
+            image = Image.open(BytesIO(response.content))
+            return image
+        except Exception as e:
+            print(f"图片加载失败: {e}")
+            return None
+    
+    def load_image_from_path(self, path):
+        """从本地路径加载图片"""
+        try:
+            image = Image.open(path)
+            return image
+        except Exception as e:
+            print(f"图片加载失败: {e}")
+            return None
+    
+    def compute_similarity(self, images, texts):
+        """
+        计算图片和文本的相似度
+        
+        Args:
+            images: 图片列表 [PIL.Image]
+            texts: 文本列表 [str]
+            
+        Returns:
+            similarity_matrix: 相似度矩阵 (len(texts) x len(images))
+        """
+        # 预处理输入
+        inputs = self.processor(
+            text=texts, 
+            images=images, 
+            return_tensors="pt", 
+            padding=True
+        ).to(self.device)
+        
+        # 模型推理
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+            
+        # 计算相似度
+        logits_per_image = outputs.logits_per_image  # 图片到文本的相似度
+        logits_per_text = outputs.logits_per_text    # 文本到图片的相似度
+        
+        # 使用图片到文本的相似度矩阵
+        similarity_matrix = logits_per_image.cpu().numpy()
+        
+        return similarity_matrix
+    
+    def display_results(self, images, texts, similarity_matrix, top_k=3):
+        """
+        显示图文匹配结果
+        
+        Args:
+            images: 图片列表
+            texts: 文本列表
+            similarity_matrix: 相似度矩阵
+            top_k: 显示前K个最匹配的结果
+        """
+        fig, axes = plt.subplots(2, 5, figsize=(20, 8))
+        axes = axes.ravel()
+        
+        print("=" * 80)
+        print("中文CLIP图文匹配结果")
+        print("=" * 80)
+        
+        # 为每张图片显示最匹配的文本
+        for img_idx, (image, ax) in enumerate(zip(images, axes)):
+            ax.imshow(image)
+            ax.axis('off')
+            
+            # 获取当前图片与所有文本的相似度
+            img_similarities = similarity_matrix[img_idx]
+            
+            # 获取相似度最高的文本索引
+            top_indices = np.argsort(img_similarities)[-top_k:][::-1]
+            
+            # 设置标题
+            title = f"图片 {img_idx+1} - 最匹配文本:\n"
+            for i, text_idx in enumerate(top_indices):
+                similarity = img_similarities[text_idx]
+                title += f"{i+1}. '{texts[text_idx]}' ({similarity:.3f})\n"
+            
+            ax.set_title(title, fontsize=10)
+        
+        plt.tight_layout()
+        plt.show()
+        
+        # 打印详细的相似度矩阵
+        print("\n详细相似度矩阵 (文本→图片):")
+        print("Rows: 文本, Columns: 图片")
+        print("-" * 80)
+        
+        # 格式化输出矩阵
+        print("      ", end="")
+        for i in range(len(images)):
+            print(f"Img{i+1:>8}", end="")
+        print()
+        
+        for i, text in enumerate(texts):
+            print(f"Text{i+1}:", end="")
+            for j in range(len(images)):
+                print(f"{similarity_matrix[j, i]:>8.3f}", end="")
+            print(f"  | {text[:30]}...")
+    
+    def find_best_matches(self, images, texts, similarity_matrix):
+        """找到最佳的图文匹配对"""
+        print("\n" + "=" * 50)
+        print("最佳图文匹配对")
+        print("=" * 50)
+        
+        best_matches = []
+        for img_idx in range(len(images)):
+            best_text_idx = np.argmax(similarity_matrix[img_idx])
+            best_score = similarity_matrix[img_idx, best_text_idx]
+            best_matches.append((img_idx, best_text_idx, best_score))
+            
+            print(f"图片 {img_idx+1} ↔ 文本 {best_text_idx+1}: "
+                  f"'{texts[best_text_idx]}' (相似度: {best_score:.3f})")
+        
+        return best_matches
+
+def main():
+    """主函数：演示中文CLIP的图文匹配能力"""
+    
+    # 初始化模型
+    clip_demo = ChineseCLIPDemo()
+    
+    # 示例图片URL（可以替换为您自己的图片URL或本地路径）
+    image_urls = [
+        "https://images.unsplash.com/photo-1546182990-dffeafbe841d?w=400",  # 狗
+        "https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?w=400",  # 猫
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400",  # 山
+        "https://images.unsplash.com/photo-1439066615861-d1af74d74000?w=400",  # 森林
+        "https://images.unsplash.com/photo-1469474968028-56623f02e42e?w=400",  # 自然
+        "https://images.unsplash.com/photo-1470115636492-6d2b56f9146d?w=400",  # 海滩
+        "https://images.unsplash.com/photo-1506905925346-21bda4d32df4?w=400",  # 山
+        "https://images.unsplash.com/photo-1418065460487-3e41a6c84dc5?w=400",  # 树
+        "https://images.unsplash.com/photo-1426604966848-d7adac402bff?w=400",  # 风景
+        "https://images.unsplash.com/photo-1441974231531-c6227db76b6e?w=400"   # 森林
+    ]
+    
+    # 示例文本描述
+    texts = [
+        "一只可爱的狗狗在草地上奔跑",
+        "猫咪在沙发上睡觉",
+        "雄伟的高山和云海",
+        "茂密的绿色森林",
+        "美丽的自然风景",
+        "阳光明媚的海滩",
+        "雪山和蓝天",
+        "秋天的树林",
+        "壮观的风景照片",
+        "森林中的小路"
+    ]
+    
+    # 加载图片
+    print("正在加载图片...")
+    images = []
+    for i, url in enumerate(image_urls):
+        image = clip_demo.load_image_from_url(url)
+        if image is not None:
+            # 调整图片大小以加快处理速度
+            image = image.resize((224, 224))
+            images.append(image)
+            print(f"图片 {i+1} 加载成功")
+        else:
+            print(f"图片 {i+1} 加载失败")
+    
+    if len(images) < 2:
+        print("图片数量不足，无法进行匹配")
+        return
+    
+    # 计算相似度
+    print("\n正在计算图文相似度...")
+    similarity_matrix = clip_demo.compute_similarity(images, texts)
+    
+    # 显示结果
+    clip_demo.display_results(images, texts, similarity_matrix)
+    
+    # 找到最佳匹配
+    best_matches = clip_demo.find_best_matches(images, texts, similarity_matrix)
+    
+    return clip_demo, images, texts, similarity_matrix, best_matches
+
+# 使用本地图片的示例
+def demo_with_local_images():
+    """使用本地图片的演示"""
+    
+    clip_demo = ChineseCLIPDemo()
+    
+    # 这里需要替换为您本地图片的路径
+    local_image_paths = [
+        "path/to/your/image1.jpg",
+        "path/to/your/image2.jpg",
+        # ... 添加更多图片路径
+    ]
+    
+    # 对应的文本描述
+    texts = [
+        "描述图片1的内容",
+        "描述图片2的内容",
+        # ... 添加更多文本
+    ]
+    
+    # 加载本地图片
+    images = []
+    for path in local_image_paths:
+        image = clip_demo.load_image_from_path(path)
+        if image is not None:
+        
