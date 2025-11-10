@@ -1,0 +1,57 @@
+[
+    {
+        "image_id": "demo0.png",
+        "caption": [
+            "一只可爱的橘色猫咪在沙发上休息",
+            "橘猫躺在舒适的沙发上",
+            "家养猫咪在室内环境中",
+            "宠物猫在沙发上睡觉",
+            "橘色条纹猫在休息"
+        ],
+        "url": "./image_database/demo0.png"
+    },
+    {
+        "image_id": "demo1.png",
+        "caption": [
+            "美丽的海滩日落景色",
+            "夕阳下的金色海滩",
+            "海边日落时的温暖光芒",
+            "沙滩和海洋在日落时分",
+            "黄昏时分的海滩风景"
+        ],
+        "url": "./image_database/demo1.png"
+    },
+    {
+        "image_id": "demo2.png",
+        "caption": [
+            "现代城市的高楼大厦",
+            "城市天际线建筑群",
+            "都市中的摩天大楼",
+            "现代建筑和城市景观",
+            "城市中心的高层建筑"
+        ],
+        "url": "./image_database/demo2.png"
+    },
+    {
+        "image_id": "demo3.png",
+        "caption": [
+            "丰盛的意大利美食",
+            "美味的披萨和意面",
+            "意大利餐厅的美食",
+            "西餐美食摆盘",
+            "诱人的意大利菜肴"
+        ],
+        "url": "./image_database/demo3.png"
+    },
+    {
+        "image_id": "demo4.png",
+        "caption": [
+            "茂密的绿色森林",
+            "自然森林景观",
+            "树木茂盛的自然环境",
+            "森林中的绿色植物",
+            "自然保护区的森林"
+        ],
+        "url": "./image_database/demo4.png"
+    }
+]
