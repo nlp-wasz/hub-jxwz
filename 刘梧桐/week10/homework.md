@@ -1,0 +1,3 @@
+- homework_01:使用云端qwen-vl模型完成图的分类
+- homework_02:使用云端qwen--vl模型完成文本的解析
+- homework_03:使用中文clip模型跑完01-CLIP模型
