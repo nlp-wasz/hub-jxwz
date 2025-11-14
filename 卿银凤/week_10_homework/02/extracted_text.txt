@@ -1,0 +1,55 @@
+word based only on its context. Unlike left-to-
+right language model pre-training, the MLM ob-
+jective enables the representation to fuse the left 
+and the right context, which allows us to pre-
+train a deep bidirectional Transformer. In addi-
+tion to the masked language model, we also use 
+a “next sentence prediction” task that jointly pre-
+trains text-pair representations. The contributions 
+of our paper are as follows:
+
+• We demonstrate the importance of bidirectional 
+pre-training for language representations. Un-
+like Radford et al. (2018), which uses unidirec-
+tional language models for pre-training, BERT 
+uses masked language models to enable pre-
+trained deep bidirectional representations. This 
+is also in contrast to Peters et al. (2018a), which 
+uses a shallow concatenation of independently 
+trained left-to-right and right-to-left LMs.
+
+• We show that pre-trained representations reduce 
+the need for many heavily-engineered task-
+specific architectures. BERT is the first fine-
+tuning based representation model that achieves 
+state-of-the-art performance on a large suite of 
+sentence-level and token-level tasks, outper-
+forming many task-specific architectures.
+
+• BERT advances the state of the art for eleven 
+NLP tasks. The code and pre-trained mod-
+els are available at https://github.com/
+google-research/bert.
+
+2 Related Work
+
+There is a long history of pre-training general lan-
+guage representations, and we briefly review the 
+most widely-used approaches in this section.
+
+2.1 Unsupervised Feature-based Approaches
+
+Learning widely applicable representations of 
+words has been an active area of research for 
+decades, including non-neural (Brown et al., 1992; 
+Ando and Zhang, 2005; Blitzer et al., 2006) and 
+neural (Mikolov et al., 2013; Pennington et al., 
+2014) methods. Pre-trained word embeddings 
+are an integral part of modern NLP systems, of-
+fering significant improvements over embeddings 
+learned from scratch (Turian et al., 2010). To pre-
+train word embedding vectors, left-to-right lan-
+guage modeling objectives have been used (Mnih 
+and Hinton, 2009), as well as objectives to dis-
+criminate correct from incorrect words in left and 
+right context (Mikolov et al., 2013).
