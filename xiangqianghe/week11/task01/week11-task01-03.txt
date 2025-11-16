@@ -1,0 +1,128 @@
+【作业1】对多模态RAG的项目，设计下接口，需要满足：数据管理的接口、多模态检索接口、多模态问答接口
+    接口定义定义清楚，传入的参数 + 返回的结果格式
+数据管理接口：核心功能包含，知识库文件的上传、解析、状态查询与删除，支持PDF、Word、图片等多模态格式
+传入参数
+file:<文件>
+index_name:string = 'default'
+chunk_size:integer = 1024
+chunk_overlap:integer = 200
+
+返回结果格式json格式
+响应体
+{
+  "file_id": "doc_abc123",
+  "index_name": "default",
+  "status": "processing",
+  "message": "File uploaded successfully. Processing started."
+}
+查询文件
+{
+  "file_id": "doc_abc123",
+  "status": "success", // 或 "processing", "failed"
+  "pages_processed": 15,
+  "total_pages": 15,
+  "error_message": null,
+  "markdown_path": "/data/doc_abc123/output.md"
+}
+删除文件
+{
+  "file_id": "doc_abc123",
+  "status": "deleted",
+  "message": "Document and its associated data have been removed."
+}
+多模态检索接口：基于文本、图片或混合查询进行向量相似性搜索，支持跨模态检索，返回图文结合的检索结果
+传入参数
+{
+  "index_name": "default",  // 要检索的知识库
+  "query_text": "CPU使用率过高的常见原因有哪些？",  // 文本查询（与图片查询二选一或同时存在）
+  "query_image_base64": "base64_encoded_image_string", // 图片查询（Base64编码）
+  "top_k": 5, // 返回的最相关结果数量
+  "score_threshold": 0.7 // 相似度分数阈值，仅返回高于此值的结果
+}
+
+返回结果格式
+json格式
+{
+  "query_type": "hybrid", // "text", "image", 或 "hybrid"
+  "results": [
+    {
+      "content": "CPU使用率飙升通常由以下原因导致：1. 存在僵尸进程...",
+      "metadata": {
+        "source_file": "运维手册.pdf",
+        "page_number": 23,
+        "chunk_id": "chunk_5a"
+      },
+      "image_urls": [
+        "https://oss.example.com/data/cpu_spike_graph.jpg"
+      ],
+      "score": 0.88,
+      "type": "text" // 或 "image"
+    },
+    {
+      "content": "一张展示正常与异常CPU使用率曲线对比的监控截图。",
+      "metadata": {
+        "source_file": "监控图谱合集.png",
+        "image_id": "img_9"
+      },
+      "image_urls": [
+        "https://oss.example.com/data/cpu_comparison.png"
+      ],
+      "score": 0.82,
+      "type": "image"
+    }
+  ]
+}
+
+多模态问答接口：基于知识库或直接输入进行多模态对话，可结合检索结果增强生成答案
+传入参数POST
+{
+  "model": "qwen-vl-max", // 使用的多模态模型名称
+  "messages": [
+    {
+      "role": "user",
+      "content": [
+        {"type": "text", "text": "请分析这张图片中描述的问题"},
+        {"type": "image_url", "image_url": {"url": "https://.../faulty_chart.png"}}
+      ]
+    }
+  ],
+  "stream": true, // 是否启用流式输出
+  "chat_knowledgebase": true, // 是否从知识库中检索增强
+  "index_name": "default" // 指定检索的知识库
+}
+
+返回结果格式
+json格式
+{
+  "id": "chat_abc123",
+  "model": "qwen-vl-max",
+  "choices": [
+    {
+      "message": {
+        "role": "assistant",
+        "content": "根据您提供的图片，这是一个典型的服务器CPU使用率尖峰图...建议检查定时任务和数据库查询优化。",
+        "referenced_documents": [
+          {
+            "file_id": "doc_xyz789",
+            "content": "...相关文本片段...",
+            "page": 10
+          }
+        ],
+        "referenced_images": [
+          "https://oss.example.com/data/ref_image_1.jpg"
+        ]
+      }
+    }
+  ],
+  "usage": {
+    "prompt_tokens": 850,
+    "completion_tokens": 150,
+    "total_tokens": 1000
+  }
+}
+【作业2】对多模态RAG的项目，如果用户使用【文本】提问 vs 【文本 + 图】提问，你会怎么处理？有什么区别？
+1、如果用户使用问题提问，使用传统的RAG问答技术进行提问处理，在答复用户的时候使用增强功能根据用户问答需要，回答文本加表格
+2、如何用户使用文本和图提问，采用clip模型提取出用户传入的文本和图相关信息，再使用增强功能答复提交给大模型处理，然后给用户答复结果
+
+【作业3】对多模态RAG的项目，milvus如果要存储文本、图、表，数据结构如何设计？
+如图所示

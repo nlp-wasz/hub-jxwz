@@ -1,0 +1,60 @@
+检索接口 /api/v1/retrieve
+
+纯文本提问：
+# 请求
+{
+    "query": "解释一下什么是神经网络？",
+    "query_type": "text",  # 明确指定为文本查询
+    "modalities": ["text", "image"], # 希望从哪些模态中检索
+    "top_k": 5
+}
+
+文本+图片提问：
+# 请求
+{
+    "query": {
+        "text": "这是什么品种的猫？",
+        "image": "base64_encoded_image_data"
+    },
+    "query_type": "multimodal",  # 明确指定为多模态查询
+    "modalities": ["text", "image"], # 强烈依赖图像模态的检索
+    "fusion_strategy": "concat",  # 新增：指定特征融合策略
+    "top_k": 5
+}
+
+问答接口 /api/v1/chat/completions
+
+纯文本提问：
+{
+    "messages": [
+        {
+            "role": "user",
+            "content": "解释一下什么是神经网络？"
+        }
+    ],
+    "model": "gpt-3.5-turbo"  # 可以使用纯文本LLM
+}
+
+文本+图片提问：
+{
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {"type": "text", "text": "这是什么品种的猫？"},
+                {"type": "image_url", "image_url": {"url": "data:image/jpeg;base64,..."}}
+            ]
+        }
+    ],
+    "model": "gpt-4-vision-preview"  # 必须使用支持视觉的VL-LLM
+}
+
+总结：
+方面	    纯文本提问	              文本+图片提问
+核心技术	文本嵌入模型 + 文本LLM	  多模态编码器（CLIP）+ 视觉语言模型
+检索本质	语义相似性	              跨模态语义-视觉相似性
+信息利用	依赖文本描述	          直接利用像素级信息
+回答能力	文本推理、总结	          视觉推理、描述、比较、指代
+系统复杂度	相对较低	              高（需要特征融合、VL-LLM）
+
+结论：文本+图片的提问方式极大地扩展了RAG系统的能力边界，使其从纯文本的知识库跃升为一个真正的多模态知识系统，能够处理需要视觉理解的开阔领域问题。在接口设计上，需要通过 query_type、fusion_strategy 等参数，以及支持多模态 content 的消息格式，来支撑这种复杂而强大的查询能力。
