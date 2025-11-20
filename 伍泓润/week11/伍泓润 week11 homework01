@@ -1,0 +1,212 @@
+POST /api/v1/documents/upload
+
+# 请求参数（FormData）
+{
+    "file": File,                    # 必选，支持的文件类型
+    "document_id": str,              # 可选，自定义文档ID
+    "title": str,                    # 可选，文档标题
+    "description": str,              # 可选，文档描述
+    "metadata": dict,                # 可选，自定义元数据
+    "chunk_strategy": str,           # 可选，分块策略
+    "embedding_model": str           # 可选，嵌入模型
+}
+
+# 响应格式
+{
+    "success": bool,
+    "document_id": str,
+    "filename": str,
+    "file_type": str,  # "text", "image", "video", "audio", "pdf"
+    "chunk_count": int,
+    "message": str
+}
+
+GET /api/v1/documents
+
+# 请求参数
+{
+    "page": int = 1,                 # 页码
+    "page_size": int = 20,           # 每页数量
+    "file_type": str = None,         # 文件类型过滤
+    "keyword": str = None            # 关键词搜索
+}
+
+# 响应格式
+{
+    "success": bool,
+    "documents": [
+        {
+            "document_id": str,
+            "filename": str,
+            "file_type": str,
+            "title": str,
+            "upload_time": "2024-01-01T10:00:00Z",
+            "chunk_count": int,
+            "file_size": int,
+            "metadata": dict
+        }
+    ],
+    "total_count": int,
+    "total_pages": int
+}
+
+DELETE /api/v1/documents/{document_id}
+
+# 响应格式
+{
+    "success": bool,
+    "message": str,
+    "deleted_chunks": int
+}
+
+POST /api/v1/retrieve
+
+# 请求参数
+{
+    "query": Union[str, File],       # 必选，文本查询或文件上传
+    "query_type": str,               # "text", "image", "audio", "video"
+    "modalities": List[str],         # 检索模态 ["text", "image", ...]
+    "top_k": int = 10,               # 返回结果数量
+    "score_threshold": float = 0.5,  # 相似度阈值
+    "filters": dict = None,          # 过滤条件
+    "hybrid_search": bool = True,    # 是否混合搜索
+    "rerank": bool = False           # 是否重排序
+}
+
+# 响应格式
+{
+    "success": bool,
+    "query": str,                    # 原始查询（文本化）
+    "results": [
+        {
+            "chunk_id": str,
+            "document_id": str,
+            "content": Union[str, dict],  # 文本内容或文件路径
+            "content_type": str,     # "text", "image", "audio", "video"
+            "metadata": {
+                "filename": str,
+                "page_number": int,  # 对于PDF
+                "timestamp": float,  # 对于音视频
+                "bounding_box": List[float],  # 对于图像区域
+                "confidence": float
+            },
+            "score": float,          # 相似度分数
+            "modality": str          # 来源模态
+        }
+    ],
+    "total_count": int,
+    "search_time": float
+}
+
+POST /api/v1/retrieve/{modality}  # modality: text, image, audio, video
+
+# 请求参数
+{
+    "query": Union[str, File],       # 查询内容
+    "top_k": int = 10,
+    "filters": dict = None
+}
+
+# 响应格式（与统一检索接口相同）
+
+POST /api/v1/chat/completions
+
+# 请求参数
+{
+    "messages": [
+        {
+            "role": "user",
+            "content": [
+                {
+                    "type": "text", 
+                    "text": "请解释这张图片中的内容"
+                },
+                {
+                    "type": "image",
+                    "data": "base64_encoded_image"  # 或文件URL
+                }
+            ]
+        }
+    ],
+    "conversation_id": str = None,   # 会话ID
+    "stream": bool = False,          # 是否流式输出
+    "temperature": float = 0.7,
+    "max_tokens": int = 1000,
+    "retrieval_config": {            # 检索配置
+        "enable_retrieval": bool = True,
+        "top_k": int = 5,
+        "score_threshold": float = 0.6
+    },
+    "modality_preference": List[str] = ["text", "image"]  # 模态偏好
+}
+
+# 流式响应格式
+# 当 stream=True 时
+data: {"type": "content", "content": "部分回答内容", "modality": "text"}
+data: {"type": "reference", "references": [...]}
+data: {"type": "end"}
+
+# 非流式响应格式
+{
+    "success": bool,
+    "conversation_id": str,
+    "response": {
+        "content": str,              # 主要回答内容
+        "modality": str,             # 回答模态
+        "reasoning_process": str,    # 推理过程（可选）
+        "supporting_evidence": [     # 支持证据
+            {
+                "chunk_id": str,
+                "content": Union[str, dict],
+                "content_type": str,
+                "score": float,
+                "source": str
+            }
+        ]
+    },
+    "usage": {
+        "prompt_tokens": int,
+        "completion_tokens": int,
+        "total_tokens": int,
+        "retrieval_time": float,
+        "generation_time": float
+    }
+}
+
+# 获取会话历史
+GET /api/v1/chat/sessions/{conversation_id}/history
+
+# 删除会话
+DELETE /api/v1/chat/sessions/{conversation_id}
+
+GET /api/v1/system/status
+
+# 响应格式
+{
+    "success": bool,
+    "system_status": {
+        "vector_db": {
+            "status": "healthy",
+            "document_count": int,
+            "chunk_count": int
+        },
+        "models": {
+            "text_embedding": str,
+            "image_embedding": str,
+            "llm": str
+        },
+        "performance": {
+            "avg_retrieval_time": float,
+            "avg_generation_time": float
+        }
+    }
+}
+
+{
+    "success": bool,
+    "error": {
+        "code": str,        # 错误代码
+        "message": str,     # 错误信息
+        "details": dict     # 详细错误信息
+    }
+}
