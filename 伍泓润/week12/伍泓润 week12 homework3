@@ -1,0 +1,196 @@
+#!/usr/bin/env python3
+"""精简版 MCP 服务器"""
+
+import asyncio
+from typing import Dict, Any, Annotated
+from fastmcp import FastMCP
+
+mcp = FastMCP("Tool Assistant")
+
+# 新闻工具
+@mcp.tool()
+def get_news(category: Annotated[str, "新闻类别"]) -> Dict[str, Any]:
+    """获取新闻"""
+    news = [
+        {"title": f"{category}新闻1", "source": "新闻源1"},
+        {"title": f"{category}新闻2", "source": "新闻源2"}
+    ]
+    return {"news": news, "category": category}
+
+@mcp.tool()
+def search_news(keyword: Annotated[str, "搜索关键词"]) -> Dict[str, Any]:
+    """搜索新闻"""
+    news = [
+        {"title": f"{keyword}相关新闻1", "source": "搜索源1"},
+        {"title": f"{keyword}相关新闻2", "source": "搜索源2"}
+    ]
+    return {"news": news, "keyword": keyword}
+
+# 通用工具
+@mcp.tool()
+def calculate(expression: Annotated[str, "数学表达式"]) -> Dict[str, Any]:
+    """计算"""
+    try:
+        result = eval(expression)
+        return {"result": result, "expression": expression}
+    except:
+        return {"error": "计算失败"}
+
+@mcp.tool()
+def sentiment_analysis(text: Annotated[str, "分析文本"]) -> Dict[str, Any]:
+    """情感分析"""
+    if "开心" in text or "好" in text:
+        sentiment = "positive"
+    elif "伤心" in text or "坏" in text:
+        sentiment = "negative"
+    else:
+        sentiment = "neutral"
+    return {"sentiment": sentiment, "text": text}
+
+async def main():
+    print("🚀 MCP 服务器运行中...")
+    await mcp.run(transport="stdio")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+#!/usr/bin/env python3
+"""精简版 Streamlit 界面"""
+
+import streamlit as st
+import json
+import subprocess
+import time
+
+st.set_page_config(page_title="工具助手", layout="wide")
+st.title("🔧 智能工具助手")
+
+class MCPClient:
+    def __init__(self):
+        self.process = subprocess.Popen(
+            ["python", "mcp_server_main.py"],
+            stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE, text=True, bufsize=1
+        )
+        time.sleep(1)
+    
+    def call_tool(self, method: str, params: dict) -> dict:
+        request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+        self.process.stdin.write(json.dumps(request) + "\n")
+        self.process.stdin.flush()
+        response = self.process.stdout.readline()
+        return json.loads(response)
+
+class ToolFilter:
+    def filter_tools(self, user_input: str) -> dict:
+        input_lower = user_input.lower()
+        
+        # 新闻工具
+        if any(word in input_lower for word in ["新闻", "资讯", "报道"]):
+            if "搜索" in input_lower or "查找" in input_lower:
+                return {"tool": "search_news", "type": "news"}
+            else:
+                return {"tool": "get_news", "type": "news"}
+        
+        # 通用工具
+        elif any(word in input_lower for word in ["计算", "算"]):
+            return {"tool": "calculate", "type": "tool"}
+        elif any(word in input_lower for word in ["情感", "情绪"]):
+            return {"tool": "sentiment_analysis", "type": "tool"}
+        
+        return {"tool": None, "type": "unknown"}
+
+# 初始化
+if "client" not in st.session_state:
+    st.session_state.client = MCPClient()
+if "filter" not in st.session_state:
+    st.session_state.filter = ToolFilter()
+
+# 侧边栏
+with st.sidebar:
+    st.header("工具列表")
+    st.write("**新闻工具**")
+    st.write("- get_news: 获取新闻")
+    st.write("- search_news: 搜索新闻")
+    st.write("**通用工具**")
+    st.write("- calculate: 计算")
+    st.write("- sentiment_analysis: 情感分析")
+
+# 主界面
+col1, col2 = st.columns([2, 1])
+
+with col1:
+    st.header("对话界面")
+    
+    user_input = st.text_input("输入您的需求:")
+    
+    if user_input:
+        # 分析用户意图
+        tool_info = st.session_state.filter.filter_tools(user_input)
+        
+        st.write(f"**检测到的工具类型**: {tool_info['type']}")
+        st.write(f"**推荐工具**: {tool_info['tool']}")
+        
+        if tool_info["tool"]:
+            # 提取参数并调用工具
+            if tool_info["tool"] == "get_news":
+                category = "科技"  # 默认类别
+                if "体育" in user_input:
+                    category = "体育"
+                elif "财经" in user_input:
+                    category = "财经"
+                result = st.session_state.client.call_tool("get_news", {"category": category})
+            
+            elif tool_info["tool"] == "search_news":
+                # 简单提取关键词
+                keyword = user_input.replace("搜索", "").replace("查找", "").strip()
+                if not keyword:
+                    keyword = "人工智能"  # 默认关键词
+                result = st.session_state.client.call_tool("search_news", {"keyword": keyword})
+            
+            elif tool_info["tool"] == "calculate":
+                # 提取数学表达式
+                import re
+                match = re.search(r'(\d+[\+\-\*\/]\d+)', user_input)
+                expression = match.group(1) if match else "2+2"
+                result = st.session_state.client.call_tool("calculate", {"expression": expression})
+            
+            elif tool_info["tool"] == "sentiment_analysis":
+                # 提取文本
+                text = user_input.replace("情感分析", "").replace("情绪分析", "").strip()
+                if not text:
+                    text = user_input
+                result = st.session_state.client.call_tool("sentiment_analysis", {"text": text})
+            
+            # 显示结果
+            if "result" in result:
+                st.success("工具调用成功！")
+                st.json(result["result"])
+
+with col2:
+    st.header("使用示例")
+    examples = [
+        "获取新闻",
+        "搜索科技新闻", 
+        "计算 10+5*2",
+        "分析情感：今天很开心"
+    ]
+    
+    for example in examples:
+        if st.button(example):
+            st.session_state.demo_input = example
+            st.rerun()
+
+# 新闻工具触发词
+["新闻", "资讯", "报道"]
+
+# 通用工具触发词  
+["计算", "算"] → calculate
+["情感", "情绪"] → sentiment_analysis
+
+# 安装依赖
+pip install fastmcp streamlit
+
+# 运行
+python mcp_server_main.py
+streamlit run streamlit_demo.py
