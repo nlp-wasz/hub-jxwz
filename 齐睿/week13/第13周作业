@@ -1,5 +1,11 @@
 1、复现一下chatbi项目，三部分（mcp、fastapi、streamlit）组成，本地启动运行。  
-
+![https://github.com/Bpig-C/hub-jxwz/blob/main/%E9%BD%90%E7%9D%BF/week13/%E4%BD%9C%E4%B8%9A1.png?raw=true](作业1)
 
 2、chatbi的项目梳理一下，现在前端和后端交互接口有多少个，写一个接口文档出来，提交。  
+API文档.md
+
 3、在service中，定义两种agent，一种是闲聊agent，一种股票agent，通过handoff链接一起进行对话。  
+前端页面；chat_handoffs.py
+后端智能体配置：agent_with_handoffs.py
+对话服务service：chat.py
+![https://github.com/Bpig-C/hub-jxwz/blob/main/%E9%BD%90%E7%9D%BF/week13/%E4%BD%9C%E4%B8%9A3.png?raw=true](作业1)
