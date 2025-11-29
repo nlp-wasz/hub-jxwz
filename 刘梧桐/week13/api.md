@@ -1,0 +1,214 @@
+### 1. 用户登录
+- **路径:** /v1/users/login
+- **方法:** POST
+- **功能:** 用户登录验证
+- **请求参数:**
+  - [RequestForUserLogin] 对象
+  - [user_name] 用户名
+  - [password] 密码
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，400 表示用户名或密码错误，404 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 2. 用户注册
+- **路径:** /v1/users/register
+- **方法:** POST
+- **功能:** 新用户注册
+- **请求参数:** [RequestForUserRegister] 对象
+  - [user_name] 用户名
+  - [password] 密码
+  - [user_role] 用户角色
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，400 表示用户名已存在，404 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 3. 密码重置
+- **路径:** /v1/users/reset-password
+- **方法:** POST
+- **功能:** 重置用户密码
+- **请求参数:** [RequestForUserResetPassword] 对象
+  - [user_name] 用户名
+  - [password] 当前密码
+  - [new_password] 新密码
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，400 表示用户名或密码错误，404 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 4. 获取用户信息
+- **路径:** /v1/users/info
+- **方法:** POST
+- **功能:** 获取指定用户信息
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，400 表示用户不存在，404 表示异常
+  - [message] 结果信息
+  - [data] 返回用户信息数据
+### 5. 修改用户信息
+- **路径:** /v1/users/reset-info
+- **方法:** POST
+- **功能:** 修改用户角色或状态
+- **请求参数:** [RequestForUserChangeInfo] 对象
+  - [user_name] 用户名
+  - [user_role] 可选，用户角色
+  - [status] 可选，用户状态
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，400 表示用户不存在，404 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 6. 删除用户
+- **路径:** /v1/users/delete
+- **方法:** POST
+- **功能:** 删除指定用户
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，400 表示用户不存在，404 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 7. 用户列表
+- **路径:** /v1/users/list
+- **方法:** POST
+- **功能:** 获取所有用户列表
+- **请求参数:** 无
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，404 表示异常
+  - [message] 结果信息
+  - [data] 返回用户列表数据
+### 8. 获取用户收藏股票
+- **路径:** /v1/stock/list_fav_stock
+- **方法:** POST
+- **功能:** 获取用户所有收藏的股票
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，404 表示异常
+  - [message] 结果信息
+  - [data] 返回用户收藏的股票列表
+### 9. 删除用户收藏股票
+- **路径:** /v1/stock/del_fav_stock
+- **方法:** POST
+- **功能:** 删除用户收藏的指定股票
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+  - [stock_code] 股票代码（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，404 表示异常
+  - [message] 结果信息
+  - [data] 返回操作结果
+### 10. 添加用户收藏股票
+- **路径:** /v1/stock/add_fav_stock
+- **方法:** POST
+- **功能:** 为用户添加收藏股票
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+  - [stock_code] 股票代码（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，404 表示异常
+  - [message] 结果信息
+  - [data] 返回操作结果
+### 11. 清空用户收藏股票
+- **路径:** /v1/stock/clear_fav_stock
+- **方法:** POST
+- **功能:** 清空用户所有收藏的股票
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，404 表示异常
+  - [message] 结果信息
+  - [data] 返回操作结果
+### 12. 聊天交互
+- **路径:** /v1/chat/
+- **方法:** POST
+- **功能:** 处理用户聊天消息，支持流式返回
+- **请求参数:** [RequestForChat] 对象
+  - [content] 消息内容
+  - [user_name] 用户名
+  - [session_id] 可选，会话 ID
+  - [task] 可选，对话任务
+  - [tools] 可选，工具列表
+  - [image_content] 可选，图片内容
+  - [file_content] 可选，文件内容
+  - [url_content] 可选，链接内容
+  - [audio_content] 可选，音频内容
+  - [video_content] 可选，视频内容
+  - [vison_mode] 可选，视觉模式标识
+  - [deepsearch_mode] 可选，深度搜索模式标识
+  - [sql_interpreter] 可选，SQL 解释器标识
+  - [code_interpreter] 可选，代码解释器标识
+- **响应:** 流式响应，实时返回聊天内容
+### 13. 初始化聊天会话
+- **路径:** /v1/chat/init
+- **方法:** POST
+- **功能:** 初始化聊天会话，获取 session_id
+- **请求参数:** 无
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，500 表示异常
+  - [message] 结果信息
+  - [data] 包含生成的 session_id
+### 14. 获取聊天历史
+- **路径:** /v1/chat/get
+- **方法:** POST
+- **功能:** 获取指定会话的聊天历史
+- **请求参数:**
+  - [session_id] 会话 ID（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，500 表示异常
+  - [message] 结果信息
+  - [data] 返回聊天历史数据
+### 15. 删除聊天会话
+- **路径:** /v1/chat/delete
+- **方法:** POST
+- **功能:** 删除指定的聊天会话
+- **请求参数:**
+  - [session_id] 会话 ID（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，500 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 16. 列出用户聊天会话
+- **路径:** /v1/chat/list
+- **方法:** POST
+- **功能:** 获取用户的所有聊天会话列表
+- **请求参数:**
+  - [user_name] 用户名（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，500 表示异常
+  - [message] 结果信息
+  - [data] 返回聊天会话列表
+### 17. 聊天反馈
+- **路径:** /v1/chat/feedback
+- **方法:** POST
+- **功能:** 对聊天消息进行反馈
+- **请求参数:**
+  - [session_id] 会话 ID（路径参数）
+  - [message_id] 消息 ID（路径参数）
+  - [feedback] 反馈标识（路径参数）
+- **响应:** [BasicResponse] 对象
+  - [code] 200 表示成功，500 表示异常
+  - [message] 结果信息
+  - [data] 返回数据
+### 18. 下载数据
+- **路径:** /v1/data/download
+- **方法:** POST
+- **功能:** 下载数据（未实现具体逻辑）
+- **请求参数:** 无
+- **响应:** 暂未明确返回格式
+### 19. 创建数据
+- **路径:** /v1/data/create
+- **方法:** POST
+- **功能:** 创建数据（未实现具体逻辑）
+- **请求参数:** 无
+- **响应:** 暂未明确返回格式
+### 20. 上传数据
+- **路径:** /v1/data/upload
+- **方法:** POST
+- **功能:** 上传数据（未实现具体逻辑）
+- **请求参数:** 无
+- **响应:** 暂未明确返回格式
+### 21. 删除数据
+- **路径:** /v1/data/delete
+- **方法:** POST
+- **功能:** 删除数据（未实现具体逻辑）
+- **请求参数:** 无
+- **响应:** 暂未明确返回格式
