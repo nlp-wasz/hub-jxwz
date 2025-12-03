@@ -1,0 +1,295 @@
+function-assistant/
+├── mcp_server_main.py
+├── streamlit_demo.py
+├── requirements.txt
+└── README.md
+
+fastmcp>=0.1.0
+streamlit>=1.28.0
+openai-agent>=0.1.0
+openai>=1.0.0
+python-dotenv>=1.0.0
+asyncio
+typing-extensions
+
+#!/usr/bin/env python3
+"""
+MCP Server for Function Assistant
+使用 FastMCP 框架创建工具服务器
+"""
+
+import asyncio
+import json
+from datetime import datetime, timedelta
+from typing import Dict, List, Any, Optional
+from fastmcp import FastMCP
+
+# 创建 MCP 服务器实例
+mcp = FastMCP("Function Assistant")
+
+# 模拟数据库存储
+user_tasks = {}
+user_calendar = {}
+
+@mcp.tool()
+def create_task(task_name: str, description: str, priority: str = "medium", due_date: str = None) -> Dict[str, Any]:
+    """创建新任务
+    
+    Args:
+        task_name: 任务名称
+        description: 任务描述
+        priority: 优先级 (low, medium, high)
+        due_date: 截止日期 (YYYY-MM-DD格式)
+    
+    Returns:
+        创建的任务信息
+    """
+    task_id = f"task_{len(user_tasks) + 1}"
+    task = {
+        "id": task_id,
+        "name": task_name,
+        "description": description,
+        "priority": priority,
+        "due_date": due_date,
+        "status": "pending",
+        "created_at": datetime.now().isoformat()
+    }
+    user_tasks[task_id] = task
+    
+    return {
+        "success": True,
+        "message": f"任务 '{task_name}' 创建成功",
+        "task": task
+    }
+
+@mcp.tool()
+def list_tasks(status: str = "all") -> Dict[str, Any]:
+    """列出所有任务
+    
+    Args:
+        status: 任务状态过滤 (all, pending, completed)
+    
+    Returns:
+        任务列表
+    """
+    if status == "all":
+        tasks = list(user_tasks.values())
+    else:
+        tasks = [task for task in user_tasks.values() if task["status"] == status]
+    
+    return {
+        "count": len(tasks),
+        "tasks": sorted(tasks, key=lambda x: x["created_at"], reverse=True)
+    }
+
+@mcp.tool()
+def complete_task(task_id: str) -> Dict[str, Any]:
+    """标记任务为完成
+    
+    Args:
+        task_id: 任务ID
+    
+    Returns:
+        操作结果
+    """
+    if task_id not in user_tasks:
+        return {"success": False, "message": f"任务 {task_id} 不存在"}
+    
+    user_tasks[task_id]["status"] = "completed"
+    user_tasks[task_id]["completed_at"] = datetime.now().isoformat()
+    
+    return {
+        "success": True,
+        "message": f"任务 '{user_tasks[task_id]['name']}' 已完成"
+    }
+
+@mcp.tool()
+def schedule_meeting(title: str, participants: List[str], duration_minutes: int = 60, 
+                    start_time: str = None) -> Dict[str, Any]:
+    """安排会议
+    
+    Args:
+        title: 会议标题
+        participants: 参会人员列表
+        duration_minutes: 会议时长（分钟）
+        start_time: 开始时间 (YYYY-MM-DD HH:MM 格式)，默认为1小时后
+    
+    Returns:
+        会议安排信息
+    """
+    if start_time:
+        start_dt = datetime.strptime(start_time, "%Y-%m-%d %H:%M")
+    else:
+        start_dt = datetime.now() + timedelta(hours=1)
+    
+    end_dt = start_dt + timedelta(minutes=duration_minutes)
+    meeting_id = f"meeting_{len(user_calendar) + 1}"
+    
+    meeting = {
+        "id": meeting_id,
+        "title": title,
+        "participants": participants,
+        "start_time": start_dt.isoformat(),
+        "end_time": end_dt.isoformat(),
+        "duration_minutes": duration_minutes,
+        "created_at": datetime.now().isoformat()
+    }
+    
+    user_calendar[meeting_id] = meeting
+    
+    return {
+        "success": True,
+        "message": f"会议 '{title}' 安排成功",
+        "meeting": meeting
+    }
+
+@mcp.tool()
+def list_meetings() -> Dict[str, Any]:
+    """列出所有安排的会议
+    
+    Returns:
+        会议列表
+    """
+    meetings = list(user_calendar.values())
+    
+    # 按开始时间排序
+    sorted_meetings = sorted(meetings, key=lambda x: x["start_time"])
+    
+    return {
+        "count": len(sorted_meetings),
+        "meetings": sorted_meetings
+    }
+
+@mcp.tool()
+def calculate_working_hours(start_time: str, end_time: str, break_minutes: int = 60) -> Dict[str, Any]:
+    """计算工作时间
+    
+    Args:
+        start_time: 开始时间 (HH:MM 格式)
+        end_time: 结束时间 (HH:MM 格式)
+        break_minutes: 休息时间（分钟）
+    
+    Returns:
+        工作时间计算结果
+    """
+    try:
+        start_dt = datetime.strptime(start_time, "%H:%M")
+        end_dt = datetime.strptime(end_time, "%H:%M")
+        
+        if end_dt < start_dt:
+            end_dt = end_dt.replace(day=end_dt.day + 1)
+        
+        total_minutes = (end_dt - start_dt).total_seconds() / 60
+        working_minutes = total_minutes - break_minutes
+        working_hours = working_minutes / 60
+        
+        return {
+            "success": True,
+            "total_minutes": total_minutes,
+            "working_minutes": working_minutes,
+            "working_hours": round(working_hours, 2),
+            "break_minutes": break_minutes
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+@mcp.resource("config://assistant")
+def get_assistant_config() -> str:
+    """获取助手配置信息"""
+    config = {
+        "name": "Function Assistant",
+        "version": "1.0.0",
+        "description": "一个多功能的办公助手",
+        "available_tools": [
+            "create_task", "list_tasks", "complete_task",
+            "schedule_meeting", "list_meetings", "calculate_working_hours"
+        ]
+    }
+    return json.dumps(config, ensure_ascii=False, indent=2)
+
+async def main():
+    """启动 MCP 服务器"""
+    print("🚀 启动 Function Assistant MCP 服务器...")
+    print("📋 可用工具:")
+    print("  • create_task - 创建新任务")
+    print("  • list_tasks - 列出任务")
+    print("  • complete_task - 完成任务")
+    print("  • schedule_meeting - 安排会议")
+    print("  • list_meetings - 列出会议")
+    print("  • calculate_working_hours - 计算工作时间")
+    
+    # 运行服务器
+    await mcp.run(transport="stdio")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+#!/usr/bin/env python3
+"""
+Streamlit 演示界面 for Function Assistant
+使用 OpenAI Agent 与 MCP 服务器交互
+"""
+
+import streamlit as st
+import asyncio
+import json
+from typing import Dict, Any, List
+from openai import OpenAI
+from openai_agent import Agent, Msg, Tool
+import subprocess
+import time
+import threading
+
+# 页面配置
+st.set_page_config(
+    page_title="智能职能助手",
+    page_icon="🤖",
+    layout="wide",
+    initial_sidebar_state="expanded"
+)
+
+# 自定义CSS样式
+st.markdown("""
+<style>
+    .main-header {
+        font-size: 2.5rem;
+        color: #1f77b4;
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+    .tool-card {
+        background-color: #f0f2f6;
+        padding: 1rem;
+        border-radius: 10px;
+        margin: 0.5rem 0;
+        border-left: 4px solid #1f77b4;
+    }
+    .success-message {
+        background-color: #d4edda;
+        color: #155724;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin: 0.5rem 0;
+    }
+    .error-message {
+        background-color: #f8d7da;
+        color: #721c24;
+        padding: 0.75rem;
+        border-radius: 5px;
+        margin: 0.5rem 0;
+    }
+</style>
+""", unsafe_allow_html=True)
+
+class MCPClient:
+    """简化的MCP客户端"""
+    
+    def __init__(self):
+        self.process = None
+        self.client = None
+        self.start_server()
+    
+    def start_server(self):
+        """启动MCP服务器"""
+        try:
+            self.
