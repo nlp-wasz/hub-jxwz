@@ -1,0 +1,7 @@
+fastmcp
+sympy
+numpy
+sentence-transformers
+torch
+scikit-learn
+openai
