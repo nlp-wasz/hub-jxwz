@@ -1,0 +1,226 @@
+# main.py
+import numpy as np, sympy as sp, json
+from typing import List, Dict
+from sentence_transformers import SentenceTransformer
+import mcp.types as types
+
+# 1. 公式数据库（模拟RAG向量库）
+class FormulaRAG:
+    def __init__(self):
+        self.model = SentenceTransformer('all-MiniLM-L6-v2')
+        self.formulas = self._init_formulas()
+        self.embeddings = self.model.encode([f['desc'] for f in self.formulas])
+    
+    def _init_formulas(self) -> List[Dict]:
+        """初始化10个公式工具"""
+        return [
+            # 1. 统计
+            {"id": "stats_mean", "desc": "计算平均值: mean(x) = Σx/n", 
+             "tool": "stats", "func": lambda args: np.mean(args.get('data', []))},
+            
+            # 2. 微积分
+            {"id": "calc_derivative", "desc": "计算导数: d/dx f(x)", 
+             "tool": "calc", "func": lambda args: str(sp.diff(
+                 sp.sympify(args.get('expr', 'x**2')), 
+                 sp.symbols(args.get('var', 'x'))))},
+            
+            # 3. 线性代数
+            {"id": "linalg_eigen", "desc": "计算矩阵特征值", 
+             "tool": "linalg", "func": lambda args: np.linalg.eig(
+                 args.get('matrix', [[1,0],[0,1]]))[0].tolist()},
+            
+            # 4. 物理
+            {"id": "physics_kinematics", "desc": "运动学方程: v=v0+at, s=v0t+1/2at²", 
+             "tool": "physics", "func": lambda args: {
+                 'v': args.get('v0',0) + args.get('a',0)*args.get('t',0),
+                 's': args.get('v0',0)*args.get('t',0) + 0.5*args.get('a',0)*args.get('t',0)**2}},
+            
+            # 5. 金融
+            {"id": "finance_compound", "desc": "复利计算: A=P(1+r)^t", 
+             "tool": "finance", "func": lambda args: args.get('P',1000) * 
+                 (1 + args.get('r',0.05)) ** args.get('t',10)},
+            
+            # 6-10... 其他公式
+        ]
+    
+    def search(self, query: str, top_k: int = 3) -> List[str]:
+        """RAG检索：用户问题→相似公式→tool白名单"""
+        query_emb = self.model.encode(query)
+        scores = np.dot(self.embeddings, query_emb)
+        top_idx = np.argsort(scores)[-top_k:][::-1]
+        return [self.formulas[i]['id'] for i in top_idx]
+
+# 2. MCP服务器（带RAG路由）
+class RAGMCPServer:
+    def __init__(self):
+        from mcp.server import Server
+        self.server = Server("rag-mcp-server")
+        self.rag = FormulaRAG()
+        self._setup_tools()
+    
+    def _setup_tools(self):
+        """动态设置MCP工具"""
+        
+        @self.server.list_tools()
+        async def list_tools():
+            # 只返回基础工具，实际工具由RAG动态选择
+            return [types.Tool(
+                name="execute_formula",
+                description="执行数学公式计算",
+                inputSchema={
+                    "type": "object",
+                    "properties": {
+                        "query": {"type": "string", "description": "用户问题"},
+                        "args": {"type": "object", "description": "计算参数"}
+                    },
+                    "required": ["query"]
+                }
+            )]
+        
+        @self.server.call_tool()
+        async def call_tool(name: str, arguments: dict):
+            # 1. RAG检索选择工具
+            query = arguments.get("query", "")
+            tool_ids = self.rag.search(query, top_k=3)
+            
+            # 2. 执行最佳匹配工具
+            results = []
+            for tool_id in tool_ids[:1]:  # 取top1执行
+                formula = next(f for f in self.rag.formulas if f['id'] == tool_id)
+                try:
+                    result = formula['func'](arguments.get('args', {}))
+                    results.append({
+                        "tool": formula['id'],
+                        "result": result,
+                        "desc": formula['desc']
+                    })
+                except Exception as e:
+                    results.append({"tool": tool_id, "error": str(e)})
+            
+            # 3. 汇总结果
+            response = {
+                "query": query,
+                "selected_tools": tool_ids,
+                "executed_result": results[0] if results else None
+            }
+            
+            return [types.TextContent(type="text", text=json.dumps(response, indent=2))]
+
+# 3. 问答流程示例
+async def qa_example():
+    server = RAGMCPServer()
+    
+    # 用户问题示例
+    questions = [
+        "计算数据[1,2,3,4,5]的平均值",
+        "求函数x^2的导数",
+        "计算矩阵[[1,2],[3,4]]的特征值",
+        "已知初速度10m/s，加速度2m/s²，求5秒后的速度",
+        "计算本金1000，年利率5%，10年后的复利"
+    ]
+    
+    for q in questions:
+        print(f"\n问题: {q}")
+        # 模拟MCP调用
+        response = await server.server.call_tool("execute_formula", {"query": q})
+        print(f"结果: {response}")
+
+# 运行
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(qa_example())
+
+# formula_qa.py
+class FormulaQA:
+    """完整问答流程"""
+    
+    def __init__(self):
+        self.rag = FormulaRAG()
+    
+    async def ask(self, question: str) -> str:
+        """完整问答流程"""
+        # 1. RAG检索工具
+        tools = self.rag.search(question)
+        
+        # 2. 选择最佳工具（简化：取第一个）
+        best_tool = tools[0] if tools else None
+        
+        # 3. 提取参数（简化示例）
+        args = self._extract_args(question)
+        
+        # 4. 执行工具
+        if best_tool:
+            formula = next(f for f in self.rag.formulas if f['id'] == best_tool)
+            result = formula['func'](args)
+            
+            # 5. 生成回答
+            return f"""
+问题: {question}
+
+使用公式: {formula['desc']}
+
+计算结果: {result}
+
+计算过程: {self._explain_calc(formula['id'], args)}
+"""
+        return "未找到合适的计算工具"
+    
+    def _extract_args(self, question: str) -> dict:
+        """简单参数提取（实际可用LLM或正则）"""
+        import re
+        
+        # 提取数字
+        numbers = [float(x) for x in re.findall(r'\d+\.?\d*', question)]
+        
+        # 提取矩阵模式 [[...]]
+        matrix_match = re.search(r'\[\[.*?\]\]', question)
+        if matrix_match:
+            import ast
+            matrix = ast.literal_eval(matrix_match.group())
+            return {'matrix': matrix}
+        
+        # 根据问题类型返回不同参数
+        if '平均值' in question or '平均' in question:
+            return {'data': numbers if numbers else [1,2,3,4,5]}
+        elif '导数' in question:
+            expr = 'x**2'  # 默认
+            if 'sin' in question:
+                expr = 'sin(x)'
+            return {'expr': expr, 'var': 'x'}
+        
+        return {}
+    
+    def _explain_calc(self, tool_id: str, args: dict) -> str:
+        """生成解释"""
+        explanations = {
+            'stats_mean': f"mean = sum({args.get('data', [])}) / {len(args.get('data', []))}",
+            'calc_derivative': f"d/dx({args.get('expr', 'x**2')})",
+            'linalg_eigen': f"特征值分解",
+        }
+        return explanations.get(tool_id, "计算完成")
+
+# 4. 客户端使用
+async def main():
+    qa = FormulaQA()
+    
+    # 交互式问答
+    while True:
+        question = input("\n请输入数学问题（输入q退出）: ")
+        if question.lower() == 'q':
+            break
+        
+        answer = await qa.ask(question)
+        print(answer)
+
+# 运行
+if __name__ == "__main__":
+    asyncio.run(main())
+
+# requirements.txt
+sentence-transformers>=2.2.0
+numpy>=1.24.0
+sympy>=1.12
+mcp>=1.0.0
+
+# 快速测试
+import asyncio
