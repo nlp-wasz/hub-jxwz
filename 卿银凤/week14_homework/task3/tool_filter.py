@@ -9,7 +9,7 @@ import mcp_tools
 # 初始化RAG模型
 class RAGToolSelector:
     def __init__(self, model_name: str="../Qwen/Qwen3-Embedding-0.6B"):
-        # 使用预训练的BERT模型进行文本编码
+        # 使用Qwen模型
         self.model = SentenceTransformer(model_name)
 
         # 构建工具描述数据库
