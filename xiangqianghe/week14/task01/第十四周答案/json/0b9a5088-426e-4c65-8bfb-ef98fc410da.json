@@ -1,0 +1,41 @@
+
+{
+    "type": "function",
+    "name": "predict_crop_yield",
+    "description": "在农业科研领域,准确预测作物产量对于制定种植策略、优化资源配置以及提升农业生产效率具有重要意义。本模型旨在构建一个基于关键环境与土壤因素的确定性方程,用于估算单位面积上的作物产量。该模型综合考虑了土壤肥力、灌溉量以及气温对作物生长的影响,适用于在可控环境条件下对产量进行定量分析和趋势预测。",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "F": {
+                "type": "number",
+                "description": "土壤肥力指数"
+            },
+            "I": {
+                "type": "number",
+                "description": "每周灌溉量 (mm/week)"
+            },
+            "T": {
+                "type": "number",
+                "description": "平均气温 (℃)"
+            },
+            "a": {
+                "type": "number",
+                "description": "土壤肥力对产量的贡献系数"
+            },
+            "b": {
+                "type": "number",
+                "description": "灌溉量对产量的贡献系数"
+            },
+            "c": {
+                "type": "number",
+                "description": "温度平方项的抑制系数"
+            }
+        },
+        "required": ["F", "I", "T", "a", "b", "c"]
+    },
+    "sympy": "from sympy import symbols; Y, F, I, T, a, b, c = symbols('Y F I T a b c'); Y = a * F + b * I - c * T**2",
+    "return": {
+        "type": "number",
+        "description": "单位面积作物产量 (kg/ha)"
+    }
+}
