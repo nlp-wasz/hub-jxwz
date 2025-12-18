@@ -1,0 +1,29 @@
+
+{
+    "type": "function",
+    "name": "predict_orders",
+    "description": "在电子商务运营中，准确预测每日订单增长量对于库存管理、资源配置和营销策略优化具有重要意义。该模型基于广告支出、当日折扣力度以及前一日订单数量三个关键驱动因素，构建了一个一阶线性差分方程模型，用于预测当日订单数量。模型具有良好的可解释性和短期预测能力，适用于趋势模拟与敏感性分析。",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "ad_spend": {
+                "type": "number",
+                "description": "当日广告支出金额，单位为元"
+            },
+            "discount_rate": {
+                "type": "number",
+                "description": "当日折扣率，取值范围0到1之间的浮点数"
+            },
+            "prev_orders": {
+                "type": "number",
+                "description": "前一日的订单数量"
+            }
+        },
+        "required": ["ad_spend", "discount_rate", "prev_orders"]
+    },
+    "sympy": "from sympy import symbols, Eq\nalpha = 0.05\nbeta = 100\ngamma = 0.7\nad_spend, discount_rate, prev_orders = symbols('ad_spend discount_rate prev_orders')\norders_t = alpha * ad_spend + beta * discount_rate + gamma * prev_orders",
+    "return": {
+        "type": "number",
+        "description": "预测的当日订单数量，为一个实数"
+    }
+}

@@ -1,0 +1,48 @@
+接口总览
+
+后端根路径 `http://127.0.0.1:8000/`
+
+用户接口 `/v1/users`
+- POST `/login` 请求体 `user_name,password` 源: routers/user.py:12
+- POST `/register` 请求体 `user_name,password,user_role` 源: routers/user.py:23
+- POST `/reset-password` 请求体 `user_name,password,new_password` 源: routers/user.py:34
+- POST `/info` 查询参数 `user_name` 源: routers/user.py:48 与 demo/user/user_list.py:4-14
+- POST `/reset-info` 请求体 `user_name,user_role?,status?` 源: routers/user.py:60 与 demo/user/user_reset.py:4-8
+- POST `/delete` 查询参数 `user_name` 源: routers/user.py:77 与 demo/user/user_delete.py:4-13
+- POST `/admin-delete` 查询参数 `operator_user_name,target_user_name` 源: routers/user.py:91-106 与 demo/user/user_delete.py:20-31
+- POST `/list` 无请求体 源: routers/user.py:89 与 demo/user/user_list.py:10-17
+
+聊天接口 `/v1/chat`
+- POST `/` SSE流, 请求体 `content,user_name,session_id?,task?,tools?` 源: routers/chat.py:22-45 与 demo/chat/chat.py:93-115
+- POST `/init` 返回 `session_id` 源: routers/chat.py:48-59 与 demo/chat/chat.py:117-123
+- POST `/get` 查询参数 `session_id` 源: routers/chat.py:62-72 与 demo/chat/chat.py:233-247
+- POST `/delete` 查询参数 `session_id` 源: routers/chat.py:75-82
+- POST `/list` 查询参数 `user_name` 源: routers/chat.py:85-92
+- POST `/feedback` 查询参数 `session_id,message_id,feedback` 源: routers/chat.py:95-102
+
+数据接口 `/v1/data`
+- POST `/download` 源: routers/data.py:1-6
+- POST `/create` 源: routers/data.py:8-10
+- POST `/upload` 源: routers/data.py:12-14
+- POST `/delete` 源: routers/data.py:16-20
+
+收藏接口 `/v1/stock`
+- POST `/list_fav_stock` 查询参数 `user_name` 源: routers/stock.py:10-16 与 demo/stock/stock_favorite.py:53-58
+- POST `/add_fav_stock` 查询参数 `user_name,stock_code` 源: routers/stock.py:26-32 与 demo/stock/stock_favorite.py:60-64
+- POST `/del_fav_stock` 查询参数 `user_name,stock_code` 源: routers/stock.py:18-24 与 demo/stock/stock_favorite.py:66-70
+- POST `/clear_fav_stock` 查询参数 `user_name` 源: routers/stock.py:34-40 与 demo/stock/stock_favorite.py:72-75
+
+股票基础接口 `/stock`
+- GET `/get_stock_code` 查询参数 `keyword?` 源: api/autostock.py:20-33 与 demo/stock/stock_search.py:6-11
+- GET `/get_index_code` 源: api/autostock.py:38-50
+- GET `/get_industry_code` 源: api/autostock.py:52-64 与 demo/stock/stock_industry.py:6-12
+- GET `/get_board_info` 源: api/autostock.py:66-78 与 demo/stock/stock_board.py:6-13
+- GET `/get_stock_rank` 查询参数 `node,industryCode?,pageIndex,pageSize,sort,asc` 源: api/autostock.py:80-106 与 demo/stock/stock_rank.py
+- GET `/get_month_line` 查询参数 `code,startDate?,endDate?,type` 源: api/autostock.py:108-130 与 demo/stock/stock_kline.py:12-23
+- GET `/get_week_line` 查询参数 `code,startDate?,endDate?,type` 源: api/autostock.py:132-154 与 demo/stock/stock_kline.py:12-23
+- GET `/get_day_line` 查询参数 `code,startDate?,endDate?,type` 源: api/autostock.py:156-178 与 demo/stock/stock_kline.py:12-23
+- GET `/get_stock_info` 查询参数 `code` 源: api/autostock.py:180-192 与 demo/stock/stock_info.py:6-12
+- GET `/get_stock_minute_data` 查询参数 `code` 源: api/autostock.py:194-206 与 demo/stock/stock_min_data.py:6-15
+
+健康检查
+- GET `/v1/healthy` 源: main_server.py:15-17

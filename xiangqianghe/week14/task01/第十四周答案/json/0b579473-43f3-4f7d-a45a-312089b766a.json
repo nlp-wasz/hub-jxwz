@@ -1,0 +1,29 @@
+
+{
+  "type": "function",
+  "name": "calculate_evaporated_moisture",
+  "description": "在食品加工与制造过程中, 干燥是一个关键的工艺环节, 广泛应用于食品保存、品质控制及延长货架期等方面。水分含量的控制对于确保食品的稳定性和安全性至关重要。该模型基于水分蒸发速率与当前水分含量成正比的假设，利用指数衰减模型描述食品在干燥过程中水分随时间的变化，并通过积分方法计算在给定时间范围内食品的累计水分蒸发量，为干燥工艺的设计与优化提供理论支持。",
+  "parameters": {
+    "type": "object",
+    "properties": {
+      "M0": {
+        "type": "number",
+        "description": "初始水分含量，表示食品在干燥开始时刻的水分质量或比例"
+      },
+      "k": {
+        "type": "number",
+        "description": "水分蒸发速率常数，反映干燥过程中水分减少的速度"
+      },
+      "T": {
+        "type": "number",
+        "description": "干燥时间，表示从干燥开始到当前时刻的时间长度"
+      }
+    },
+    "required": ["M0", "k", "T"]
+  },
+  "sympy": "from sympy import symbols, exp, integrate\nM0, k, T = symbols('M0 k T')\nexpr = M0 * (1 - exp(-k * T))\nevaporated = integrate(expr, (symbols('t'), 0, T))",
+  "return": {
+    "type": "number",
+    "description": "在时间区间 [0, T] 内的累计水分蒸发量，表示食品在此期间损失的总水分"
+  }
+}
