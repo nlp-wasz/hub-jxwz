@@ -99,6 +99,7 @@ FORMULA_DESCRIPTIONS = [
     }
 ]
 
+
 class FormulaQAEngine:
     def __init__(self):
         # 使用 transformers 直接加载本地 BGE 模型
@@ -131,6 +132,7 @@ class FormulaQAEngine:
             embeddings = torch.nn.functional.normalize(embeddings, p=2, dim=1)
 
         return embeddings.numpy()
+
     def _build_formula_embeddings(self):
         """构建公式描述的嵌入向量"""
         descriptions = [formula["description"] for formula in FORMULA_DESCRIPTIONS]
@@ -185,12 +187,12 @@ class FormulaQAEngine:
         """
         query_terms = query.lower().split()
         scores = []
-        
+
         # 统计所有文档中的词频
         doc_term_freqs = []
         doc_lengths = []
         avg_doc_length = 0
-        
+
         for formula in formulas:
             desc = formula["description"].lower()
             terms = desc.split()
@@ -199,33 +201,33 @@ class FormulaQAEngine:
                 term_freq[term] = term_freq.get(term, 0) + 1
             doc_term_freqs.append(term_freq)
             doc_lengths.append(len(terms))
-            
+
         if doc_lengths:
             avg_doc_length = sum(doc_lengths) / len(doc_lengths)
-        
+
         # 计算每个文档的BM25得分
         k1 = 1.5
         b = 0.75
-        
+
         for i, formula in enumerate(formulas):
             score = 0
             desc = formula["description"].lower()
-            
+
             for term in query_terms:
                 if term in doc_term_freqs[i]:
                     # 计算逆文档频率(IDF)
                     df = sum(1 for freqs in doc_term_freqs if term in freqs)
                     idf = np.log((len(formulas) - df + 0.5) / (df + 0.5))
-                    
+
                     # 计算词频组件
                     tf = doc_term_freqs[i][term]
                     doc_len = doc_lengths[i] if doc_lengths else 1
                     tf_component = tf * (k1 + 1) / (tf + k1 * (1 - b + b * doc_len / avg_doc_length))
-                    
+
                     score += idf * tf_component
-                    
+
             scores.append(score)
-            
+
         return scores
 
     def _rrf_fusion(self, bge_scores, bm25_scores, k=60):
@@ -243,22 +245,22 @@ class FormulaQAEngine:
         # 获取排序索引
         bge_rank_indices = np.argsort(bge_scores)[::-1]
         bm25_rank_indices = np.argsort(bm25_scores)[::-1]
-        
+
         # 初始化融合得分
         fused_scores = defaultdict(float)
-        
+
         # 为BGE结果打分
         for rank, idx in enumerate(bge_rank_indices):
             fused_scores[idx] += 1 / (rank + 1 + k)
-            
+
         # 为BM25结果打分
         for rank, idx in enumerate(bm25_rank_indices):
             fused_scores[idx] += 1 / (rank + 1 + k)
-            
+
         # 转换为列表格式
         final_scores = [fused_scores[i] for i in range(len(bge_scores))]
         return final_scores
-    
+
     def _rerank_with_bge(self, query, formulas):
         """
         使用BGE模型对候选公式进行重排序
@@ -275,20 +277,20 @@ class FormulaQAEngine:
         for formula in formulas:
             text = f"查询: {query}\n公式: {formula['description']}"
             pairs.append(text)
-        
+
         # 编码文本对
         embeddings = self._encode_text(pairs)
-        
+
         # 计算查询与各公式的相似度
         query_embedding = self._encode_text(query)
         similarities = cosine_similarity(query_embedding, embeddings)[0]
-        
+
         # 根据相似度重排序
         ranked_indices = np.argsort(similarities)[::-1]
         reranked_formulas = [formulas[i] for i in ranked_indices]
-        
+
         return reranked_formulas
-    
+
     async def execute_formula(self, formula_info, parameters):
         """
         通过MCP客户端执行指定的公式计算
@@ -307,7 +309,7 @@ class FormulaQAEngine:
                 print(f"正在调用工具 {tool_name}...")
                 print(f"参数: {parameters}")
                 result = await client.call_tool(tool_name, parameters)
-                
+
                 # 对于积分计算器，直接返回结果文本
                 if tool_name == "integral_calculator":
                     return {"result": result.content, "unit": ""}
@@ -315,7 +317,7 @@ class FormulaQAEngine:
                     return {"result": result.structured_content["result"], "unit": self._get_unit(formula_info["id"])}
         except Exception as e:
             return {"error": str(e)}
-    
+
     def _get_unit(self, formula_id):
         """获取公式结果的单位"""
         units = {
@@ -331,7 +333,7 @@ class FormulaQAEngine:
             "crop_growth_dynamics": "生物量/天"
         }
         return units.get(formula_id, "")
-    
+
     def extract_parameters_with_qwen(self, query, formula_info):
         """
         使用阿里云Qwen大模型从用户查询中提取参数
@@ -393,7 +395,7 @@ class FormulaQAEngine:
                 api_key="sk-4c44ef4112a04e65910dfdd56774f084",
                 base_url="https://dashscope.aliyuncs.com/compatible-mode/v1"
             )
-            
+
             # 调用阿里云Qwen模型
             completion = client.chat.completions.create(
                 model="qwen-max",
@@ -403,7 +405,7 @@ class FormulaQAEngine:
                 temperature=0.1,
                 max_tokens=500
             )
-            
+
             # 解析模型返回的结果
             result = completion.choices[0].message.content.strip()
             # 提取JSON部分
@@ -427,7 +429,7 @@ class FormulaQAEngine:
         except Exception as e:
             print(f"调用模型时发生错误: {e}")
             return {param: None for param in formula_info["parameters"]}
-    
+
     def extract_parameters_from_query(self, query, formula_info):
         """
         从用户查询中提取参数（默认方法）
@@ -442,13 +444,13 @@ class FormulaQAEngine:
         # 对于积分计算器，使用特殊处理
         if formula_info["tool_name"] == "integral_calculator":
             return self._extract_integral_params(query)
-        
+
         # 将查询转换为小写便于匹配
         query_lower = query.lower()
-        
+
         # 初始化参数字典
         parameters = {param: None for param in formula_info["parameters"]}
-        
+
         # 定义常见的参数关键词映射
         param_keywords = {
             "temp": ["温度", "气温", "temp", "temperature"],
@@ -480,11 +482,11 @@ class FormulaQAEngine:
             "W": ["含水量", "水分", "water", "moisture", "W"],
             "N": ["氮含量", "氮", "nitrogen", "N"]
         }
-        
+
         # 使用正则表达式尝试提取数字
         numbers = re.findall(r'[-+]?\d*\.\d+|\d+', query)
         number_index = 0
-        
+
         # 遍历每个参数
         for param in formula_info["parameters"]:
             # 查找特定参数的关键词
@@ -499,12 +501,12 @@ class FormulaQAEngine:
                             parameters[param] = float(match.group(1))
                             found = True
                             break
-            
+
             # 如果没找到特定关键词，按顺序分配数字
             if not found and number_index < len(numbers):
                 parameters[param] = float(numbers[number_index])
                 number_index += 1
-                
+
         return parameters
 
     def _extract_integral_params(self, query):
@@ -518,7 +520,7 @@ class FormulaQAEngine:
             dict: 积分参数字典
         """
         import re
-        
+
         # 初始化参数
         params = {
             "expression": None,
@@ -526,7 +528,7 @@ class FormulaQAEngine:
             "lower_limit": None,
             "upper_limit": None
         }
-        
+
         # 先尝试提取积分限
         # 匹配"从0到10"、"[0,10]"、"0->10"等格式
         limit_patterns = [
@@ -536,17 +538,17 @@ class FormulaQAEngine:
             r'\[(\d+\.?\d*),(\d+\.?\d*)\]',
             r'\((\d+\.?\d*),(\d+\.?\d*)\)'
         ]
-        
+
         lower_limit = None
         upper_limit = None
-        
+
         for pattern in limit_patterns:
             match = re.search(pattern, query)
             if match:
                 lower_limit = float(match.group(1))
                 upper_limit = float(match.group(2))
                 break
-        
+
         # 如果没有找到积分限，尝试单独匹配数字（只在明确提到定积分时）
         if lower_limit is None and upper_limit is None and ('定积分' in query or '从' in query or '到' in query):
             numbers = re.findall(r'(\d+\.?\d*)', query)
@@ -554,13 +556,13 @@ class FormulaQAEngine:
                 # 假设前两个数字是积分限
                 lower_limit = float(numbers[0])
                 upper_limit = float(numbers[1])
-        
+
         params["lower_limit"] = lower_limit
         params["upper_limit"] = upper_limit
-        
+
         # 表达式提取
         expression = None
-        
+
         # 尝试各种模式提取表达式
         expr_patterns = [
             r'计算(.+?)的(定|不定)?积分',
@@ -568,13 +570,13 @@ class FormulaQAEngine:
             r'积分(.+?)(?:从|在|上|范围|$)',
             r'integrate\s+(.+?)(?:\s+from|$)'
         ]
-        
+
         for pattern in expr_patterns:
             match = re.search(pattern, query, re.IGNORECASE)
             if match:
                 expression = match.group(1).strip()
                 break
-        
+
         # 如果还是没找到，尝试更通用的匹配
         if not expression:
             # 查找最常见的数学表达式模式
@@ -582,20 +584,20 @@ class FormulaQAEngine:
                 r'([a-zA-Z][\w\+\-\*\/\^\(\)\s\d]*)',  # 以字母开头的表达式
                 r'([x\w\+\-\*\/\^\(\)\s\d]+)'  # 包含x的表达式
             ]
-            
+
             for pattern in math_patterns:
                 match = re.search(pattern, query)
                 if match and len(match.group(1).strip()) > 1:  # 至少2个字符
                     expression = match.group(1).strip()
                     break
-        
+
         if expression:
             # 特殊处理：针对"计算x^2在0到10上的定积分"这类查询
             if '在' in expression and ('到' in expression or '从' in expression):
                 # 尝试清理表达式中的积分限信息
                 expression = re.sub(r'在\d+到\d+上?', '', expression)
                 expression = re.sub(r'在\d+从\d+', '', expression)
-            
+
             # 清理表达式
             expression = re.sub(r'[\s\u3000]+', '', expression)  # 去除空格
             # 将 ^ 转换为 **
@@ -603,7 +605,7 @@ class FormulaQAEngine:
             # 去除末尾可能的介词或限定词
             expression = re.sub(r'(?:从|在|上|中|范围)?(?:\d+到\d+)?$', '', expression)
             expression = expression.strip()
-            
+
             # 如果表达式中仍有积分限信息，进一步清理
             if lower_limit is not None and upper_limit is not None:
                 limit_str1 = str(int(lower_limit)) if lower_limit.is_integer() else str(lower_limit)
@@ -611,9 +613,9 @@ class FormulaQAEngine:
                 expression = re.sub(f'{limit_str1}到{limit_str2}', '', expression)
                 expression = re.sub(f'{limit_str1}-{limit_str2}', '', expression)
                 expression = re.sub(f'{limit_str1}从{limit_str2}', '', expression)
-            
+
             params["expression"] = expression.strip() or "x**2"  # 默认表达式
-            
+
             # 尝试提取变量（通常是最常见的字母）
             letters = re.findall(r'[a-zA-Z]', expression)
             if letters:
@@ -630,12 +632,12 @@ class FormulaQAEngine:
             # 默认设置
             params["expression"] = "x**2"  # 默认表达式
             params["variable"] = "x"
-        
+
         # 特殊处理：如果只有下限没有上限，可能是解析错误
         if params["lower_limit"] is not None and params["upper_limit"] is None:
             params["upper_limit"] = params["lower_limit"]
             params["lower_limit"] = 0.0
-        
+
         return params
 
     def get_missing_parameters(self, parameters):
@@ -654,7 +656,7 @@ class FormulaQAEngine:
 async def main():
     # 初始化问答引擎
     engine = FormulaQAEngine()
-    
+
     # 获取API密钥
     api_key = input("请输入阿里云DashScope API密钥（留空则使用默认的参数提取方法）: ").strip()
     if api_key:
@@ -664,40 +666,40 @@ async def main():
     else:
         use_qwen = False
         print("使用默认参数提取方法")
-    
+
     print("=== 文档公式智能问答系统 ===")
     print("请输入您的问题，系统将自动匹配相关公式并进行计算")
     print("输入 'quit' 退出系统")
     print("示例积分问题: 计算x^2在0到1上的定积分")
-    
+
     while True:
         query = input("\n请输入您的问题: ").strip()
-        
+
         if query.lower() == 'quit':
             print("感谢使用，再见！")
             break
-            
+
         if not query:
             continue
-            
+
         # 检索相关公式
         print("\n正在检索相关公式...")
         relevant_formulas = engine.retrieve_relevant_formulas(query, top_k=5)
-        
+
         # 使用BGE rerank进行重排序
         print("正在进行重排序...")
         reranked_formulas = engine._rerank_with_bge(query, relevant_formulas)
         relevant_formulas = reranked_formulas[:3]  # 取前3个
-        
+
         print(f"\n找到 {len(relevant_formulas)} 个相关公式:")
         for i, formula in enumerate(relevant_formulas, 1):
             print(f"{i}. {formula['name']} (相似度: {formula['similarity']:.4f})")
             print(f"   描述: {formula['description']}")
-            
+
         # 选择第一个公式进行计算（实际应用中可能需要用户选择或进一步筛选）
         selected_formula = relevant_formulas[0]
         print(f"\n选择公式: {selected_formula['name']}")
-        
+
         # 从问题中提取参数
         print("\n正在从问题中提取参数...")
         if use_qwen:
@@ -705,21 +707,21 @@ async def main():
         else:
             # 使用原有的简单参数提取方法
             parameters = engine.extract_parameters_from_query(query, selected_formula)
-        
+
         print(f"提取到的参数: {parameters}")
-        
+
         # 检查是否有缺失的参数
-        missing_params = engine.get_missing_parameters(parameters)
-        
-        if missing_params:
-            print(f"\n缺少以下参数: {', '.join(missing_params)}")
-            print("请重新提问并在问题中包含上述参数的值")
-            continue
-            
+        # missing_params = engine.get_missing_parameters(parameters)
+
+        # if missing_params:
+        #     print(f"\n缺少以下参数: {', '.join(missing_params)}")
+        #     print("请重新提问并在问题中包含上述参数的值")
+        #     continue
+
         # 执行计算
         print("\n正在执行计算...")
         result = await engine.execute_formula(selected_formula, parameters)
-        
+
         # 显示结果
         if "error" in result:
             print(f"计算出错: {result['error']}")
@@ -729,6 +731,8 @@ async def main():
             else:
                 print(f"\n计算结果: {result['result']}")
 
+
 if __name__ == "__main__":
     import asyncio
+
     asyncio.run(main())
