@@ -1,0 +1,185 @@
+fastmcp>=0.1.0
+streamlit>=1.28.0
+textblob>=0.17.1
+
+#!/usr/bin/env python3
+"""精简版 MCP 服务器"""
+
+import asyncio
+from datetime import datetime
+from typing import Dict, Any, Annotated
+from fastmcp import FastMCP
+from textblob import TextBlob
+
+mcp = FastMCP("Function Assistant")
+
+@mcp.tool()
+def create_task(task_name: str, description: str) -> Dict[str, Any]:
+    """创建新任务"""
+    return {
+        "success": True,
+        "message": f"任务 '{task_name}' 创建成功",
+        "task": {
+            "name": task_name,
+            "description": description,
+            "created_at": datetime.now().isoformat()
+        }
+    }
+
+@mcp.tool()
+def list_tasks() -> Dict[str, Any]:
+    """列出任务"""
+    return {
+        "success": True,
+        "tasks": [
+            {"name": "示例任务", "status": "pending"},
+            {"name": "完成报告", "status": "completed"}
+        ]
+    }
+
+@mcp.tool()
+def sentiment_classification(text: Annotated[str, "要分析的文本"]) -> Dict[str, Any]:
+    """分析文本情感"""
+    try:
+        blob = TextBlob(text)
+        polarity = blob.sentiment.polarity
+        
+        if polarity > 0.1:
+            category, emoji = "positive", "😊"
+        elif polarity < -0.1:
+            category, emoji = "negative", "😞"
+        else:
+            category, emoji = "neutral", "😐"
+        
+        return {
+            "success": True,
+            "text": text,
+            "sentiment": {
+                "polarity": round(polarity, 3),
+                "category": category,
+                "emoji": emoji
+            }
+        }
+    except Exception as e:
+        return {"success": False, "error": str(e)}
+
+async def main():
+    print("🚀 启动 MCP 服务器...")
+    await mcp.run(transport="stdio")
+
+if __name__ == "__main__":
+    asyncio.run(main())
+
+#!/usr/bin/env python3
+"""精简版 Streamlit 界面"""
+
+import streamlit as st
+import json
+import subprocess
+import time
+
+# 页面配置
+st.set_page_config(page_title="智能助手", layout="wide")
+
+st.title("🤖 智能职能助手")
+
+class MCPClient:
+    def __init__(self):
+        self.process = None
+        self.start_server()
+    
+    def start_server(self):
+        try:
+            self.process = subprocess.Popen(
+                ["python", "mcp_server_main.py"],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                bufsize=1
+            )
+            time.sleep(1)
+        except Exception as e:
+            st.error(f"启动失败: {e}")
+    
+    def call_tool(self, method: str, params: dict) -> dict:
+        try:
+            request = {"jsonrpc": "2.0", "id": 1, "method": method, "params": params}
+            self.process.stdin.write(json.dumps(request) + "\n")
+            self.process.stdin.flush()
+            response = self.process.stdout.readline()
+            return json.loads(response)
+        except:
+            return {"error": "通信失败"}
+
+# 初始化
+if "client" not in st.session_state:
+    st.session_state.client = MCPClient()
+
+# 侧边栏
+with st.sidebar:
+    st.header("工具")
+    
+    # 情感分析
+    st.subheader("情感分析")
+    text = st.text_input("输入文本:")
+    if st.button("分析情感"):
+        if text:
+            result = st.session_state.client.call_tool("sentiment_classification", {"text": text})
+            if "result" in result:
+                st.session_state.sentiment_result = result["result"]
+    
+    # 任务管理
+    st.subheader("任务管理")
+    if st.button("查看任务"):
+        result = st.session_state.client.call_tool("list_tasks", {})
+        if "result" in result:
+            st.session_state.tasks = result["result"]["tasks"]
+
+# 主界面
+col1, col2 = st.columns(2)
+
+with col1:
+    st.header("情感分析结果")
+    if "sentiment_result" in st.session_state:
+        result = st.session_state.sentiment_result
+        if result["success"]:
+            sentiment = result["sentiment"]
+            st.write(f"文本: {result['text']}")
+            st.write(f"情感: {sentiment['emoji']} {sentiment['category']}")
+            st.write(f"极性: {sentiment['polarity']}")
+            
+            # 可视化
+            progress = (sentiment['polarity'] + 1) / 2
+            st.progress(progress, f"情感极性: {sentiment['polarity']:.3f}")
+
+with col2:
+    st.header("任务列表")
+    if "tasks" in st.session_state:
+        for task in st.session_state.tasks:
+            status = "✅" if task["status"] == "completed" else "⏳"
+            st.write(f"{status} {task['name']}")
+
+# 对话界面
+st.header("对话")
+user_input = st.text_input("输入消息:")
+if st.button("发送"):
+    if user_input:
+        # 简单响应逻辑
+        if "情感" in user_input or "情绪" in user_input:
+            st.info("我可以分析文本情感，请在侧边栏输入文本")
+        elif "任务" in user_input:
+            st.info("我可以管理任务，点击侧边栏查看任务列表")
+        else:
+            st.info("我是您的智能助手，可以帮您分析情感和管理任务")
+
+# 安装依赖
+pip install -r requirements.txt
+python -m textblob.download_corpora
+
+# 运行（两个终端）
+# 终端1
+python mcp_server_main.py
+
+# 终端2  
+streamlit run streamlit_demo.py

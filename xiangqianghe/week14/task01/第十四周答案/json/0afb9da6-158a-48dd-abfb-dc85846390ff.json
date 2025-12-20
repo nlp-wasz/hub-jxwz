@@ -1,0 +1,42 @@
+
+{
+    "type": "function",
+    "name": "predict_crop_yield",
+    "description": "该模型用于预测作物产量，综合考虑平均生长温度、生长期间降水量、施肥量、每日平均光照时长和土壤质量指数五个关键因素的影响。通过归一化处理与参数组合，反映不同环境与管理条件下作物产量的变化趋势，为农业决策提供理论支持。",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "temp": {
+                "type": "number",
+                "description": "平均生长温度（单位：℃）"
+            },
+            "rainfall": {
+                "type": "number",
+                "description": "生长期间降水量（单位：mm）"
+            },
+            "fertilizer": {
+                "type": "number",
+                "description": "施肥量（单位：kg/ha）"
+            },
+            "sunlight": {
+                "type": "number",
+                "description": "每日平均光照时长（单位：小时）"
+            },
+            "soil_quality": {
+                "type": "number",
+                "description": "土壤质量指数（无量纲，数值越高表示质量越好）"
+            }
+        },
+        "required": ["temp", "rainfall", "fertilizer", "sunlight", "soil_quality"]
+    },
+    "sympy": "from sympy import symbols, Abs\ntemp, rainfall, fertilizer, sunlight, soil_quality = symbols('temp rainfall fertilizer sunlight soil_quality')\nbase_yield = 5.0\ntemp_factor = 1.0 - Abs(temp - 25) / 25\ndeprecated_rainfall_factor = 1.0 - Abs(rainfall - 600) / 600\nfertilizer_factor = 1.0 + fertilizer / 200\nsunlight_factor = 0.8 + (sunlight / 12) * 0.4\nsoil_factor = 1.0 + soil_quality\nyield_prediction = base_yield * temp_factor * deprecated_rainfall_factor * fertilizer_factor * sunlight_factor * soil_factor\nresult = Max(0, yield_prediction)",
+    "return": {
+        "type": "object",
+        "properties": {
+            "yield_prediction": {
+                "type": "number",
+                "description": "预测的作物产量（单位：吨/公顷），非负值"
+            }
+        }
+    }
+}

@@ -1,0 +1,154 @@
+# sentiment_analysis_simple.py
+import pandas as pd
+import torch
+from torch.utils.data import Dataset
+from transformers import BertTokenizer, BertForSequenceClassification, TrainingArguments, Trainer
+from sklearn.model_selection import train_test_split
+from fastapi import FastAPI
+from pydantic import BaseModel
+import uvicorn
+import argparse
+
+
+# 数据集类
+class ReviewDataset(Dataset):
+    def __init__(self, encodings, labels):
+        self.encodings = encodings
+        self.labels = labels
+
+    def __getitem__(self, idx):
+        item = {key: torch.tensor(val[idx]) for key, val in self.encodings.items()}
+        item["labels"] = torch.tensor(self.labels[idx])
+        return item
+
+    def __len__(self):
+        return len(self.labels)
+
+
+# 情感分析器
+class SentimentAnalyzer:
+    def __init__(self, model_path="./model"):
+        self.model_path = model_path
+        self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+        self.model = None
+        self.tokenizer = None
+
+    def load_data(self, csv_path):
+        df = pd.read_csv(csv_path)
+        df = df.dropna()
+        return df["review"].tolist(), df["label"].tolist()
+
+    def prepare_data(self, texts, labels):
+        train_texts, val_texts, train_labels, val_labels = train_test_split(
+            texts, labels, test_size=0.2, random_state=42
+        )
+
+        self.tokenizer = BertTokenizer.from_pretrained("bert-base-chinese")
+
+        train_encodings = self.tokenizer(train_texts, truncation=True, padding=True, max_length=128)
+        val_encodings = self.tokenizer(val_texts, truncation=True, padding=True, max_length=128)
+
+        return ReviewDataset(train_encodings, train_labels), ReviewDataset(val_encodings, val_labels)
+
+    def train(self, train_dataset, val_dataset, epochs=2):
+        self.model = BertForSequenceClassification.from_pretrained("bert-base-chinese", num_labels=2)
+
+        training_args = TrainingArguments(
+            output_dir=self.model_path,
+            num_train_epochs=epochs,
+            per_device_train_batch_size=16,
+            per_device_eval_batch_size=32,
+            evaluation_strategy="epoch",
+        )
+
+        trainer = Trainer(
+            model=self.model,
+            args=training_args,
+            train_dataset=train_dataset,
+            eval_dataset=val_dataset,
+        )
+
+        trainer.train()
+        self.model.save_pretrained(self.model_path)
+        self.tokenizer.save_pretrained(self.model_path)
+
+    def load_model(self):
+        self.model = BertForSequenceClassification.from_pretrained(self.model_path)
+        self.tokenizer = BertTokenizer.from_pretrained(self.model_path)
+        self.model.to(self.device)
+        self.model.eval()
+
+    def predict(self, text):
+        inputs = self.tokenizer(text, return_tensors="pt", truncation=True, padding=True, max_length=128)
+        inputs = {k: v.to(self.device) for k, v in inputs.items()}
+
+        with torch.no_grad():
+            outputs = self.model(**inputs)
+
+        pred = torch.argmax(outputs.logits, dim=-1).item()
+        return {"label": pred, "sentiment": "positive" if pred == 1 else "negative"}
+
+
+# FastAPI应用
+app = FastAPI()
+analyzer = SentimentAnalyzer()
+
+
+class ReviewRequest(BaseModel):
+    text: str
+
+
+@app.on_event("startup")
+async def startup():
+    try:
+        analyzer.load_model()
+    except:
+        print("Model not found, train first with --train")
+
+
+@app.post("/predict")
+async def predict(request: ReviewRequest):
+    return analyzer.predict(request.text)
+
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument("--train", action="store_true", help="Train model")
+    parser.add_argument("--serve", action="store_true", help="Start server")
+    parser.add_argument("--csv", default="waimai_10k.csv", help="CSV file path")
+    parser.add_argument("--host", default="0.0.0.0", help="Server host")
+    parser.add_argument("--port", default=8000, type=int, help="Server port")
+
+    args = parser.parse_args()
+
+    if args.train:
+        texts, labels = analyzer.load_data(args.csv)
+        train_data, val_data = analyzer.prepare_data(texts, labels)
+        analyzer.train(train_data, val_data)
+        print("Training completed")
+
+    if args.serve:
+        uvicorn.run(app, host=args.host, port=args.port)
+
+
+if __name__ == "__main__":
+    main()
+
+# 使用方法
+# 1. 安装依赖
+# pip install pandas torch transformers fastapi uvicorn scikit-learn
+
+# 2. 训练模型
+# python sentiment_analysis_simple.py --train --csv waimai_10k.csv
+
+# 3. 启动服务
+# python sentiment_analysis_simple.py --serve
+
+# 4. 测试API
+# curl -X POST "http://localhost:8000/predict" -H "Content-Type: application/json" -d '{"text": "很快，好吃，味道足，量大"}'
+
+# 5. 压力测试
+# echo '{"text": "很快，好吃"}' > test.json
+# ab -n 100 -c 1 -T "application/json" -p test.json http://localhost:8000/predict
+# ab -n 100 -c 5 -T "application/json" -p test.json http://localhost:8000/predict
+# ab -n 100 -c 10 -T "application/json" -p test.json http://localhost:8000/predict

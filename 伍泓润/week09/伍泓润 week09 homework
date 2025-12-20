@@ -1,0 +1,231 @@
+#!/usr/bin/env python3
+"""
+穿衣智能指南 - Clothing Advisor
+根据天气、温度、湿度提供个性化穿衣建议
+"""
+
+import os
+import json
+import requests
+from typing import Dict, List, Optional
+import argparse
+
+class ClothingAdvisor:
+    def __init__(self, api_key: str = None, base_url: str = None):
+        """
+        初始化穿衣顾问
+        
+        Args:
+            api_key: LLM API密钥
+            base_url: API基础URL
+        """
+        self.api_key = api_key or os.getenv('LLM_API_KEY')
+        self.base_url = base_url or os.getenv('LLM_API_BASE', 'https://api.openai.com/v1')
+        
+        # 本地规则库作为备用方案
+        self.clothing_rules = self._initialize_rules()
+    
+    def _initialize_rules(self) -> Dict:
+        """初始化本地穿衣规则库"""
+        return {
+            "temperature_ranges": [
+                {"min": -50, "max": 0, "level": "极寒", "advice": "厚重羽绒服、保暖内衣、厚毛衣、防寒帽、手套、围巾"},
+                {"min": 0, "max": 10, "level": "寒冷", "advice": "羽绒服、毛衣、长裤、保暖鞋袜"},
+                {"min": 10, "max": 20, "level": "凉爽", "advice": "薄外套、长袖衬衫、长裤、休闲鞋"},
+                {"min": 20, "max": 25, "level": "舒适", "advice": "短袖、薄长裤、休闲鞋"},
+                {"min": 25, "max": 30, "level": "温暖", "advice": "短袖、短裤、凉鞋、遮阳帽"},
+                {"min": 30, "max": 50, "level": "炎热", "advice": "轻薄透气衣物、防晒衣、凉鞋"}
+            ],
+            "weather_conditions": {
+                "晴天": {"advice": "建议浅色衣物，注意防晒", "accessories": "太阳镜、遮阳帽"},
+                "雨天": {"advice": "建议防水外套和雨具", "accessories": "雨伞、雨衣、防水鞋"},
+                "雪天": {"advice": "厚重防寒，注意防滑", "accessories": "防滑鞋、手套、围巾"},
+                "阴天": {"advice": "适中保暖，可带薄外套", "accessories": "薄外套"},
+                "大风": {"advice": "建议防风外套", "accessories": "防风衣、帽子"},
+                "雾霾": {"advice": "建议戴口罩，穿长袖", "accessories": "口罩、帽子"}
+            },
+            "humidity_effects": {
+                "low": {"min": 0, "max": 30, "advice": "空气干燥，注意保湿"},
+                "medium": {"min": 30, "max": 70, "advice": "湿度适中，穿着舒适"},
+                "high": {"min": 70, "max": 100, "advice": "湿度较高，建议透气衣物"}
+            }
+        }
+    
+    def get_llm_advice(self, weather: str, temperature: float, humidity: float) -> str:
+        """
+        使用LLM API获取穿衣建议
+        
+        Args:
+            weather: 天气状况
+            temperature: 温度(摄氏度)
+            humidity: 湿度百分比
+            
+        Returns:
+            str: 穿衣建议
+        """
+        if not self.api_key:
+            return self.get_local_advice(weather, temperature, humidity)
+        
+        prompt = self._build_prompt(weather, temperature, humidity)
+        
+        try:
+            headers = {
+                "Authorization": f"Bearer {self.api_key}",
+                "Content-Type": "application/json"
+            }
+            
+            data = {
+                "model": "gpt-3.5-turbo",
+                "messages": [
+                    {
+                        "role": "system",
+                        "content": "你是一个专业的穿衣顾问，根据天气、温度、湿度提供详细、实用的穿衣建议。"
+                    },
+                    {
+                        "role": "user", 
+                        "content": prompt
+                    }
+                ],
+                "temperature": 0.7,
+                "max_tokens": 800
+            }
+            
+            response = requests.post(
+                f"{self.base_url}/chat/completions",
+                headers=headers,
+                json=data,
+                timeout=30
+            )
+            
+            if response.status_code == 200:
+                result = response.json()
+                return result["choices"][0]["message"]["content"]
+            else:
+                print(f"API请求失败: {response.status_code}，使用本地规则库")
+                return self.get_local_advice(weather, temperature, humidity)
+                
+        except Exception as e:
+            print(f"LLM API错误: {e}，使用本地规则库")
+            return self.get_local_advice(weather, temperature, humidity)
+    
+    def _build_prompt(self, weather: str, temperature: float, humidity: float) -> str:
+        """构建提示词"""
+        return f"""请根据以下天气条件提供详细的穿衣建议：
+
+当前天气条件：
+- 天气状况：{weather}
+- 温度：{temperature}°C
+- 湿度：{humidity}%
+
+请按照以下格式提供建议：
+
+**天气条件分析：**
+简要分析当前天气特点
+
+**穿衣建议：**
+1. 基础穿搭（上衣、下装）
+2. 外套建议  
+3. 鞋履建议
+4. 配饰建议
+5. 特殊注意事项
+
+**温馨提示：**
+根据具体条件给出贴心提醒
+
+请提供专业、实用的建议："""
+    
+    def get_local_advice(self, weather: str, temperature: float, humidity: float) -> str:
+        """
+        使用本地规则库生成穿衣建议
+        
+        Args:
+            weather: 天气状况
+            temperature: 温度
+            humidity: 湿度
+            
+        Returns:
+            str: 穿衣建议
+        """
+        # 确定温度区间
+        temp_advice = ""
+        for temp_range in self.clothing_rules["temperature_ranges"]:
+            if temp_range["min"] <= temperature < temp_range["max"]:
+                temp_advice = f"温度{temperature}°C属于{temp_range['level']}天气，建议：{temp_range['advice']}"
+                break
+        
+        # 天气条件建议
+        weather_advice = self.clothing_rules["weather_conditions"].get(
+            weather, 
+            {"advice": "请根据温度适当着装", "accessories": "常规配饰"}
+        )
+        
+        # 湿度建议
+        humidity_advice = ""
+        for level, range_info in self.clothing_rules["humidity_effects"].items():
+            if range_info["min"] <= humidity < range_info["max"]:
+                humidity_advice = range_info["advice"]
+                break
+        
+        # 构建完整建议
+        advice = f"""**穿衣智能指南建议**
+
+**当前天气条件：**
+- 天气：{weather}
+- 温度：{temperature}°C  
+- 湿度：{humidity}%
+
+**详细建议：**
+{temp_advice}
+
+天气相关建议：{weather_advice['advice']}
+湿度影响：{humidity_advice}
+
+**配饰建议：** {weather_advice['accessories']}
+
+**温馨提示：**
+请根据个人体感适当调整，注意天气变化。"""
+        
+        return advice
+    
+    def analyze_comfort_index(self, temperature: float, humidity: float) -> str:
+        """
+        分析舒适度指数
+        
+        Args:
+            temperature: 温度
+            humidity: 湿度
+            
+        Returns:
+            str: 舒适度评价
+        """
+        # 简化的舒适度计算
+        if temperature < 10:
+            return "体感寒冷，需要注意保暖"
+        elif 10 <= temperature < 20:
+            if humidity > 80:
+                return "体感湿冷，建议穿保暖透气衣物"
+            else:
+                return "体感凉爽，穿着舒适"
+        elif 20 <= temperature < 26:
+            return "体感舒适，适宜各种户外活动"
+        elif 26 <= temperature < 30:
+            if humidity > 70:
+                return "体感闷热，建议轻薄透气衣物"
+            else:
+                return "体感温暖，注意防晒"
+        else:
+            return "体感炎热，注意防暑降温"
+
+def main():
+    """主函数"""
+    parser = argparse.ArgumentParser(description='穿衣智能指南')
+    parser.add_argument('--weather', type=str, help='天气状况（如：晴天、雨天、阴天等）')
+    parser.add_argument('--temperature', type=float, help='温度（摄氏度）')
+    parser.add_argument('--humidity', type=float, help='湿度百分比')
+    parser.add_argument('--api-key', type=str, help='LLM API密钥', default=os.getenv('LLM_API_KEY'))
+    parser.add_argument('--api-base', type=str, help='API基础URL', default=os.getenv('LLM_API_BASE'))
+    
+    args = parser.parse_args()
+    
+    # 创建穿衣顾问实例
+    advisor = ClothingAdvisor(api_key=args.api_key, base_url=args.api_bas

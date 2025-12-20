@@ -1,0 +1,800 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 穿衣智能指南
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/siliconflow:0.0.29@1e8f0b4a32c07d5e192847e4cd57384dcf196f35c667670ca7f00e18a8ead4e9
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: if-else
+      id: 1761136375833-source-1761137301112-target
+      source: '1761136375833'
+      sourceHandle: source
+      target: '1761137301112'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: agent
+      id: 1761137301112-false-1761137482181-target
+      source: '1761137301112'
+      sourceHandle: 'false'
+      target: '1761137482181'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: if-else
+        targetType: code
+      id: 1761137301112-true-1761138889756-target
+      source: '1761137301112'
+      sourceHandle: 'true'
+      target: '1761138889756'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: agent
+        targetType: code
+      id: 1761137482181-source-1761138889756-target
+      source: '1761137482181'
+      sourceHandle: source
+      target: '1761138889756'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: code
+        targetType: llm
+      id: 1761138889756-source-llm-target
+      source: '1761138889756'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: llm-source-answer-target
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 天气
+          max_length: 256
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: weather
+        - default: ''
+          hint: ''
+          label: 温度
+          max_length: 256
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: temperature
+        - default: ''
+          hint: ''
+          label: 湿度
+          max_length: 256
+          options: []
+          placeholder: ''
+          required: false
+          type: text-input
+          variable: humidity
+      height: 139
+      id: '1761136375833'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: Pro/deepseek-ai/DeepSeek-V3
+          provider: langgenius/siliconflow/siliconflow
+        prompt_template:
+        - id: 05b8cb10-9668-467a-a482-0668f4e91ffc
+          role: system
+          text: "穿衣智能指南提示词模板\n====================\n【角色】  \n你是一位“全天候穿衣智能顾问”，名字暂定为「衣念」。\
+            \  \n【任务】  \n根据用户实时提供的天气、温度、湿度 3 项核心数据，在 100 字左右给出“可直接照穿”的穿衣方案，并额外输出 3\
+            \ 组“可替换单品”以备灵活调整。  \n【输出格式】  \n1. 今日穿搭（≤100 字，先结论后理由，用“·”分隔单品， Emoji 仅允许使用\
+            \ 1 个☀️/☔️/❄️ 作为开头）  \n2. 替换单品（3 组，每组格式：{单品类别}→{建议单品}，用“；”分隔）  \n3. 风险提醒（≤20\
+            \ 字，极端天气或体感落差时触发，无时写“无”）  \n\n【决策逻辑】  \n1. 温度优先：  \n   - T≥30℃ 极热；20–29℃\
+            \ 热；10–19℃ 温和；0–9℃ 凉；-10–-1℃ 冷；≤-11℃ 极冷  \n2. 湿度修正：  \n   - RH≥80% 体感-2℃；60–79%\
+            \ 体感-1℃；40–59% 体感+0℃；≤39% 体感+1℃  \n3. 天气叠加：  \n   - 雨雪/大风：在修正后温度上再-1℃；暴晒/高紫外：+1℃并强制防晒单品\
+            \  \n4. 三层原则：  \n   - 内层（透气排汗）+中层（保温）+外层（防风/防雨）  \n   - 极热仅留内层，极冷三层齐全，其余按修正温度动态删减\
+            \  \n5. 色系建议：  \n   - 温度≤10℃ 推荐暖/深色系；≥25℃ 推荐冷/浅色系；其余中性色  \n\n【示例】  \n\
+            用户输入：天气=小雨，温度=7℃，湿度=85%  \n系统输出：  \n☔️今日穿搭：摇粒绒外套·羊毛针织衫·速干长袖T·加绒牛仔裤·防水短靴·折叠伞\
+            \  \n替换单品：外套→轻型羽绒服；鞋→防滑马丁靴；包→防水托特包  \n风险提醒：路面湿滑，注意防滑  \n\n【用户输入信息】  \n\
+            {weather} = {{#1761136375833.weather#}} \n{temperature} = {{#1761136375833.temperature#}}\n\
+            {humidity} = {{#1761136375833.temperature#}}  \n如果上述天气或温度有一个值为空，那么请根据其他智能体传入的相关信息进行推荐，要求不变：\n\
+            其他智能体辅助信息（注意当已有天气信息可能为空）：{{#1761138889756.result#}}\n【系统提示】  \n请严格按以上格式输出，禁止出现“建议”“可能”等模糊词，直接给方案，确保用户\
+            \ 3 秒能读完。"
+        - id: 74b19463-b4eb-494e-92c6-7e473b0ed455
+          role: user
+          text: '{{#sys.query#}}'
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: llm
+      position:
+        x: 1422.4915530675933
+        y: 342.67392374609904
+      positionAbsolute:
+        x: 1422.4915530675933
+        y: 342.67392374609904
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 102
+      id: answer
+      position:
+        x: 1422.4915530675933
+        y: 476.8686648006949
+      positionAbsolute:
+        x: 1422.4915530675933
+        y: 476.8686648006949
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        cases:
+        - case_id: 'true'
+          conditions:
+          - comparison_operator: not empty
+            id: 4d4f2609-3f27-480a-9702-740202013dd9
+            value: ''
+            varType: string
+            variable_selector:
+            - '1761136375833'
+            - weather
+          - comparison_operator: not empty
+            id: 6f22f72b-2120-46a6-80cf-6e8d81ed924f
+            value: ''
+            varType: string
+            variable_selector:
+            - '1761136375833'
+            - temperature
+          id: 'true'
+          logical_operator: and
+        selected: false
+        title: 条件分支
+        type: if-else
+      height: 149
+      id: '1761137301112'
+      position:
+        x: 380
+        y: 407
+      positionAbsolute:
+        x: 380
+        y: 407
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        agent_parameters:
+          instruction:
+            type: constant
+            value: '【角色】
+
+              你是一位“天气查询小助手”，名字「天感」。
+
+              【任务】
+
+              当根据用户提问自动调用工具补全用户查询地点的时间、再根据时间查询用户需要的时间的天气信息（包括天气、温度和湿度），然后直接将时间、天气、温度和湿度信息直接输出即可。注意：若用户输入中未包含地点，那么请直接根据北京地点及时间查询天气。
+
+              【系统提示】
+
+              禁止编造数据，禁止输出建议；工具返回后立即结束本轮对话，把数据静默转交下一智能体。如果用户没有输入具体位置，那么默认查询中国北京地点的相关信息。'
+          maximum_iterations:
+            type: constant
+            value: 3
+          model:
+            type: constant
+            value:
+              completion_params: {}
+              mode: chat
+              model: Pro/deepseek-ai/DeepSeek-V3.1
+              model_type: llm
+              provider: langgenius/siliconflow/siliconflow
+              type: model-selector
+          query:
+            type: constant
+            value: 请结合用户查询（{{#sys.query#}}）当前时间的天气、温度和湿度信息，找全后则结束循环。
+          tools:
+            type: constant
+            value:
+            - enabled: true
+              extra:
+                description: 一个用于获取当前时间的工具。
+              parameters: {}
+              provider_name: time
+              provider_show_name: time
+              schemas:
+              - auto_generate: null
+                default: '%Y-%m-%d %H:%M:%S'
+                form: form
+                human_description:
+                  en_US: Time format in strftime standard.
+                  ja_JP: Time format in strftime standard.
+                  pt_BR: Time format in strftime standard.
+                  zh_Hans: strftime 标准的时间格式。
+                label:
+                  en_US: Format
+                  ja_JP: Format
+                  pt_BR: Format
+                  zh_Hans: 格式
+                llm_description: null
+                max: null
+                min: null
+                name: format
+                options: []
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: UTC
+                form: form
+                human_description:
+                  en_US: Timezone
+                  ja_JP: Timezone
+                  pt_BR: Timezone
+                  zh_Hans: 时区
+                label:
+                  en_US: Timezone
+                  ja_JP: Timezone
+                  pt_BR: Timezone
+                  zh_Hans: 时区
+                llm_description: null
+                max: null
+                min: null
+                name: timezone
+                options:
+                - icon: null
+                  label:
+                    en_US: UTC
+                    ja_JP: UTC
+                    pt_BR: UTC
+                    zh_Hans: UTC
+                  value: UTC
+                - icon: null
+                  label:
+                    en_US: America/New_York
+                    ja_JP: America/New_York
+                    pt_BR: America/New_York
+                    zh_Hans: 美洲/纽约
+                  value: America/New_York
+                - icon: null
+                  label:
+                    en_US: America/Los_Angeles
+                    ja_JP: America/Los_Angeles
+                    pt_BR: America/Los_Angeles
+                    zh_Hans: 美洲/洛杉矶
+                  value: America/Los_Angeles
+                - icon: null
+                  label:
+                    en_US: America/Chicago
+                    ja_JP: America/Chicago
+                    pt_BR: America/Chicago
+                    zh_Hans: 美洲/芝加哥
+                  value: America/Chicago
+                - icon: null
+                  label:
+                    en_US: America/Sao_Paulo
+                    ja_JP: America/Sao_Paulo
+                    pt_BR: América/São Paulo
+                    zh_Hans: 美洲/圣保罗
+                  value: America/Sao_Paulo
+                - icon: null
+                  label:
+                    en_US: Asia/Shanghai
+                    ja_JP: Asia/Shanghai
+                    pt_BR: Asia/Shanghai
+                    zh_Hans: 亚洲/上海
+                  value: Asia/Shanghai
+                - icon: null
+                  label:
+                    en_US: Asia/Ho_Chi_Minh
+                    ja_JP: Asia/Ho_Chi_Minh
+                    pt_BR: Ásia/Ho Chi Minh
+                    zh_Hans: 亚洲/胡志明市
+                  value: Asia/Ho_Chi_Minh
+                - icon: null
+                  label:
+                    en_US: Asia/Tokyo
+                    ja_JP: Asia/Tokyo
+                    pt_BR: Asia/Tokyo
+                    zh_Hans: 亚洲/东京
+                  value: Asia/Tokyo
+                - icon: null
+                  label:
+                    en_US: Asia/Dubai
+                    ja_JP: Asia/Dubai
+                    pt_BR: Asia/Dubai
+                    zh_Hans: 亚洲/迪拜
+                  value: Asia/Dubai
+                - icon: null
+                  label:
+                    en_US: Asia/Kolkata
+                    ja_JP: Asia/Kolkata
+                    pt_BR: Asia/Kolkata
+                    zh_Hans: 亚洲/加尔各答
+                  value: Asia/Kolkata
+                - icon: null
+                  label:
+                    en_US: Asia/Seoul
+                    ja_JP: Asia/Seoul
+                    pt_BR: Asia/Seoul
+                    zh_Hans: 亚洲/首尔
+                  value: Asia/Seoul
+                - icon: null
+                  label:
+                    en_US: Asia/Singapore
+                    ja_JP: Asia/Singapore
+                    pt_BR: Asia/Singapore
+                    zh_Hans: 亚洲/新加坡
+                  value: Asia/Singapore
+                - icon: null
+                  label:
+                    en_US: Europe/London
+                    ja_JP: Europe/London
+                    pt_BR: Europe/London
+                    zh_Hans: 欧洲/伦敦
+                  value: Europe/London
+                - icon: null
+                  label:
+                    en_US: Europe/Berlin
+                    ja_JP: Europe/Berlin
+                    pt_BR: Europe/Berlin
+                    zh_Hans: 欧洲/柏林
+                  value: Europe/Berlin
+                - icon: null
+                  label:
+                    en_US: Europe/Moscow
+                    ja_JP: Europe/Moscow
+                    pt_BR: Europe/Moscow
+                    zh_Hans: 欧洲/莫斯科
+                  value: Europe/Moscow
+                - icon: null
+                  label:
+                    en_US: Australia/Sydney
+                    ja_JP: Australia/Sydney
+                    pt_BR: Australia/Sydney
+                    zh_Hans: 澳大利亚/悉尼
+                  value: Australia/Sydney
+                - icon: null
+                  label:
+                    en_US: Pacific/Auckland
+                    ja_JP: Pacific/Auckland
+                    pt_BR: Pacific/Auckland
+                    zh_Hans: 太平洋/奥克兰
+                  value: Pacific/Auckland
+                - icon: null
+                  label:
+                    en_US: Africa/Cairo
+                    ja_JP: Africa/Cairo
+                    pt_BR: Africa/Cairo
+                    zh_Hans: 非洲/开罗
+                  value: Africa/Cairo
+                placeholder: null
+                precision: null
+                required: false
+                scope: null
+                template: null
+                type: select
+              settings:
+                format:
+                  value:
+                    type: mixed
+                    value: '%Y-%m-%d %H:%M:%S'
+                timezone:
+                  value:
+                    type: constant
+                    value: UTC
+              tool_description: 一个用于获取当前时间的工具。
+              tool_label: 获取当前时间
+              tool_name: current_time
+              type: builtin
+            - enabled: true
+              extra:
+                description: 时区转换
+              parameters:
+                current_time:
+                  auto: 1
+                  value: null
+                current_timezone:
+                  auto: 1
+                  value: null
+                target_timezone:
+                  auto: 1
+                  value: null
+              provider_name: time
+              provider_show_name: time
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: current time, such as 2024-1-1 0:0:0
+                  ja_JP: current time, such as 2024-1-1 0:0:0
+                  pt_BR: current time, such as 2024-1-1 0:0:0
+                  zh_Hans: 当前时间，比如 2024-1-1 0:0:0
+                label:
+                  en_US: current time
+                  ja_JP: current time
+                  pt_BR: current time
+                  zh_Hans: 当前时间
+                llm_description: null
+                max: null
+                min: null
+                name: current_time
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: Asia/Shanghai
+                form: llm
+                human_description:
+                  en_US: Current Timezone, such as Asia/Shanghai
+                  ja_JP: Current Timezone, such as Asia/Shanghai
+                  pt_BR: Current Timezone, such as Asia/Shanghai
+                  zh_Hans: 当前时区，比如 Asia/Shanghai
+                label:
+                  en_US: Current Timezone
+                  ja_JP: Current Timezone
+                  pt_BR: Current Timezone
+                  zh_Hans: 当前时区
+                llm_description: null
+                max: null
+                min: null
+                name: current_timezone
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: Asia/Tokyo
+                form: llm
+                human_description:
+                  en_US: Target Timezone, such as Asia/Tokyo
+                  ja_JP: Target Timezone, such as Asia/Tokyo
+                  pt_BR: Target Timezone, such as Asia/Tokyo
+                  zh_Hans: 目标时区，比如 Asia/Tokyo
+                label:
+                  en_US: Target Timezone
+                  ja_JP: Target Timezone
+                  pt_BR: Target Timezone
+                  zh_Hans: 目标时区
+                llm_description: null
+                max: null
+                min: null
+                name: target_timezone
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              settings: {}
+              tool_description: 时区转换
+              tool_label: 时区转换
+              tool_name: timezone_conversion
+              type: builtin
+            - enabled: true
+              extra:
+                description: 天气查询
+              parameters:
+                city:
+                  auto: 1
+                  value: null
+              provider_name: langgenius/openweather/openweather
+              provider_show_name: langgenius/openweather/openweather
+              schemas:
+              - auto_generate: null
+                default: null
+                form: llm
+                human_description:
+                  en_US: Target city for weather forecast query
+                  ja_JP: Target city for weather forecast query
+                  pt_BR: Cidade de destino para consulta de previsão do tempo
+                  zh_Hans: 天气预报查询的目标城市
+                label:
+                  en_US: city
+                  ja_JP: city
+                  pt_BR: cidade
+                  zh_Hans: 城市
+                llm_description: If you don't know you can extract the city name from
+                  the question or you can reply：Please tell me your city. You have
+                  to extract the Chinese city name from the question.If the input
+                  region is in Chinese characters for China, it should be replaced
+                  with the corresponding English name, such as '北京' for correct input
+                  is 'Beijing'
+                max: null
+                min: null
+                name: city
+                options: []
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: string
+              - auto_generate: null
+                default: zh_cn
+                form: form
+                human_description:
+                  en_US: language
+                  ja_JP: language
+                  pt_BR: language
+                  zh_Hans: 语言
+                label:
+                  en_US: language
+                  ja_JP: language
+                  pt_BR: language
+                  zh_Hans: 语言
+                llm_description: ''
+                max: null
+                min: null
+                name: lang
+                options:
+                - icon: ''
+                  label:
+                    en_US: cn
+                    ja_JP: cn
+                    pt_BR: cn
+                    zh_Hans: 中国
+                  value: zh_cn
+                - icon: ''
+                  label:
+                    en_US: usa
+                    ja_JP: usa
+                    pt_BR: usa
+                    zh_Hans: 美国
+                  value: en_us
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: select
+              - auto_generate: null
+                default: metric
+                form: form
+                human_description:
+                  en_US: units for temperature
+                  ja_JP: units for temperature
+                  pt_BR: units for temperature
+                  zh_Hans: 温度单位
+                label:
+                  en_US: units
+                  ja_JP: units
+                  pt_BR: units
+                  zh_Hans: 单位
+                llm_description: ''
+                max: null
+                min: null
+                name: units
+                options:
+                - icon: ''
+                  label:
+                    en_US: metric
+                    ja_JP: metric
+                    pt_BR: metric
+                    zh_Hans: ℃
+                  value: metric
+                - icon: ''
+                  label:
+                    en_US: imperial
+                    ja_JP: imperial
+                    pt_BR: imperial
+                    zh_Hans: ℉
+                  value: imperial
+                placeholder: null
+                precision: null
+                required: true
+                scope: null
+                template: null
+                type: select
+              settings:
+                lang:
+                  value:
+                    type: constant
+                    value: zh_cn
+                units:
+                  value:
+                    type: constant
+                    value: metric
+              tool_description: 天气查询
+              tool_label: 天气查询
+              tool_name: weather
+              type: builtin
+        agent_strategy_label: FunctionCalling
+        agent_strategy_name: function_calling
+        agent_strategy_provider_name: langgenius/agent/agent
+        meta:
+          minimum_dify_version: 1.7.0
+          version: 0.0.2
+        plugin_unique_identifier: langgenius/agent:0.0.24@0274c08e62efaa28f6327e7bdba655e16559ec28d4f41f2fa3ef553e6327c0f6
+        selected: false
+        title: Agent
+        tool_node_version: '2'
+        type: agent
+      height: 195
+      id: '1761137482181'
+      position:
+        x: 708
+        y: 511
+      positionAbsolute:
+        x: 708
+        y: 511
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        code: "\ndef main(arg1: str):\n    if arg1:\n        return { \"result\":\
+          \ arg1 }\n    else:\n        return{\"result\": None}"
+        code_language: python3
+        outputs:
+          result:
+            children: null
+            type: string
+        selected: false
+        title: 代码执行
+        type: code
+        variables:
+        - value_selector:
+          - '1761137482181'
+          - text
+          value_type: string
+          variable: arg1
+      height: 51
+      id: '1761138889756'
+      position:
+        x: 1023.1729698162985
+        y: 390.43040895666417
+      positionAbsolute:
+        x: 1023.1729698162985
+        y: 390.43040895666417
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 50.008446932406514
+      y: -21.368664800695
+      zoom: 1.0000000000000002
+  rag_pipeline_variables: []

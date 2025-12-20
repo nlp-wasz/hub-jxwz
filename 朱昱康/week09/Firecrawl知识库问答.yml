@@ -1,0 +1,318 @@
+app:
+  description: ''
+  icon: 📑
+  icon_background: '#E0F2FE'
+  mode: advanced-chat
+  name: Firecrawl知识库问答
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1711528915811-1711528917469
+      source: '1711528915811'
+      sourceHandle: source
+      target: '1711528917469'
+      targetHandle: target
+      type: custom
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: question-classifier
+      id: 1711528914102-source-1761190785275-target
+      source: '1711528914102'
+      sourceHandle: source
+      target: '1761190785275'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: answer
+      id: 1711528917469-source-1761191221659-target
+      source: '1711528917469'
+      sourceHandle: source
+      target: '1761191221659'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: question-classifier
+        targetType: answer
+      id: 1761190785275-2-17611908531290-target
+      source: '1761190785275'
+      sourceHandle: '2'
+      target: '17611908531290'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: question-classifier
+        targetType: knowledge-retrieval
+      id: 1761190785275-1-1711528915811-target
+      source: '1761190785275'
+      sourceHandle: '1'
+      target: '1711528915811'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 54
+      id: '1711528914102'
+      position:
+        x: 30
+        y: 288
+      positionAbsolute:
+        x: 30
+        y: 288
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        dataset_ids:
+        - 6084ed3f-d100-4df2-a277-b40d639ea7c6
+        - b0de9dad-f9ad-46fe-a0fe-8e282b6731cb
+        - eec6f60d-72f1-4eba-8fa2-ee52a2a5fcf9
+        desc: 这个功能让你能够从知识库中查找与用户问题有关的文本内容。
+        multiple_retrieval_config:
+          reranking_enable: true
+          reranking_mode: reranking_model
+          reranking_model:
+            model: gte-rerank
+            provider: tongyi
+          top_k: 4
+        query_variable_selector:
+        - '1711528914102'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        single_retrieval_config:
+          model:
+            completion_params:
+              frequency_penalty: 0
+              max_tokens: 512
+              presence_penalty: 0
+              temperature: 0
+              top_p: 1
+            mode: chat
+            name: gpt-3.5-turbo
+            provider: openai
+        title: 知识检索
+        type: knowledge-retrieval
+      dragging: false
+      height: 136
+      id: '1711528915811'
+      position:
+        x: 638
+        y: 288
+      positionAbsolute:
+        x: 638
+        y: 288
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: true
+          variable_selector:
+          - '1711528915811'
+          - result
+        desc: ''
+        memory:
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            presence_penalty: 0
+            temperature: 0.2
+            top_p: 0.5
+          mode: chat
+          name: qwen2.5-7b-instruct
+          provider: tongyi
+        prompt_template:
+        - id: 33722613-e080-426d-87ca-39077b638889
+          role: system
+          text: '你是一个Firecrawl知识库专家，Firecrawl是一个流行的爬虫SDK框架。
+
+            使用以下内容作为你所掌握的Firecrawl知识，放在<context></context> XML标签内。
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            回答用户时：
+
+            尽量参考上下文。如果你在不确定的时候不知道，就寻求澄清。
+
+            避免提及你是从上下文中获取的信息。
+
+            并根据用户问题的语言来回答。'
+        selected: true
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1711528917469'
+      position:
+        x: 942
+        y: 288
+      positionAbsolute:
+        x: 942
+        y: 288
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        classes:
+        - id: '1'
+          name: 用户询问和Firecrawl相关的问题
+        - id: '2'
+          name: 用户询问无关问题
+        desc: ''
+        instructions: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen-vl-max-0809
+          provider: tongyi
+        query_variable_selector:
+        - sys
+        - query
+        selected: false
+        title: 问题分类器
+        topics: []
+        type: question-classifier
+        vision:
+          enabled: false
+      height: 176
+      id: '1761190785275'
+      position:
+        x: 334
+        y: 288
+      positionAbsolute:
+        x: 334
+        y: 288
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: 很抱歉，我不能回答你的问题。如果你需要更多帮助，请查看[帮助文档](https://docs.firecrawl.dev/introduction)。
+        desc: ''
+        selected: false
+        title: 直接回复 (1)
+        type: answer
+        variables: []
+      height: 148
+      id: '17611908531290'
+      position:
+        x: 638
+        y: 464
+      positionAbsolute:
+        x: 638
+        y: 464
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        answer: '{{#1711528917469.text#}}'
+        desc: ''
+        selected: false
+        title: 直接回复 2
+        type: answer
+        variables: []
+      height: 103
+      id: '1761191221659'
+      position:
+        x: 1246
+        y: 288
+      positionAbsolute:
+        x: 1246
+        y: 288
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: 6
+      y: -1
+      zoom: 0.7

@@ -1,0 +1,64 @@
+# 导入必要的库
+import pandas as pd  # 数据处理库
+import jieba  # 中文分词库
+from sklearn.feature_extraction.text import CountVectorizer  # 文本特征提取
+from sklearn.naive_bayes import MultinomialNB  # 朴素贝叶斯分类器
+from sklearn import tree  # 决策树分类器
+
+
+
+
+
+# 读取数据集
+# sep="\t" 表示数据用制表符分隔，header=None 表示没有列名
+dataset = pd.read_csv("dataset.csv", sep="\t", header=None)
+print("数据集前5行：")
+print(dataset.head(5))
+
+# 对中文文本进行分词处理
+# dataset[0] 是文本列，dataset[1] 是标签列
+# jieba.lcut() 进行中文分词，然后用空格连接
+input_sentence = dataset[0].apply(lambda x:" ".join(jieba.lcut(x)))
+
+
+
+
+
+# 创建文本特征提取器
+vector = CountVectorizer()
+# 学习词汇表，将文本转换为特征向量
+vector.fit(input_sentence.values)   # 特征提取
+
+# 准备测试数据
+test_question ="这里怎么回家"
+# 对测试文本进行分词
+test_sentence = " ".join (jieba.lcut(test_question))
+# 将测试文本转换为特征向量
+test_sentence = vector.transform([test_sentence])
+
+
+
+
+
+# 创建并训练朴素贝叶斯模型
+nb_model = MultinomialNB()
+# 使用训练数据训练模型
+nb_model.fit(vector.transform(input_sentence.values), dataset[1])
+
+# 使用朴素贝叶斯模型进行预测
+print("朴素贝叶斯的预测结果是",nb_model.predict(test_sentence))
+
+
+
+
+
+
+# 创建并训练决策树模型
+dt_model = tree.DecisionTreeClassifier() # 模型初始化
+# 使用训练数据训练决策树模型
+dt_model.fit(vector.transform(input_sentence.values), dataset[1])
+
+# 使用决策树模型进行预测
+print("决策树的预测结果是",dt_model.predict(test_sentence))
+
+

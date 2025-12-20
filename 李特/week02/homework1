@@ -1,0 +1,194 @@
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+import matplotlib.pyplot as plt  # 新增：用于绘制loss对比图
+
+# ... (Data loading and preprocessing remains the same) ...
+dataset = pd.read_csv("../temp test/dataset.csv", sep="\t", header=None)
+texts = dataset[0].tolist()
+string_labels = dataset[1].tolist()
+
+label_to_index = {label: i for i, label in enumerate(set(string_labels))}
+numerical_labels = [label_to_index[label] for label in string_labels]
+
+char_to_index = {'<pad>': 0}
+for text in texts:
+    for char in text:
+        if char not in char_to_index:
+            char_to_index[char] = len(char_to_index)
+
+index_to_char = {i: char for char, i in char_to_index.items()}
+vocab_size = len(char_to_index)
+
+max_len = 40
+
+
+class CharBoWDataset(Dataset):
+    def __init__(self, texts, labels, char_to_index, max_len, vocab_size):
+        self.texts = texts
+        self.labels = torch.tensor(labels, dtype=torch.long)
+        self.char_to_index = char_to_index
+        self.max_len = max_len
+        self.vocab_size = vocab_size
+        self.bow_vectors = self._create_bow_vectors()
+
+    def _create_bow_vectors(self):
+        tokenized_texts = []
+        for text in self.texts:
+            tokenized = [self.char_to_index.get(char, 0) for char in text[:self.max_len]]
+            tokenized += [0] * (self.max_len - len(tokenized))
+            tokenized_texts.append(tokenized)
+
+        bow_vectors = []
+        for text_indices in tokenized_texts:
+            bow_vector = torch.zeros(self.vocab_size)
+            for index in text_indices:
+                if index != 0:
+                    bow_vector[index] += 1
+            bow_vectors.append(bow_vector)
+        return torch.stack(bow_vectors)
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        return self.bow_vectors[idx], self.labels[idx]
+
+
+# ================ 修改1：扩展SimpleClassifier类 ================
+# 原代码：固定两层网络 (input_dim → hidden_dim → output_dim)
+# 修改后：支持动态构建任意层数的网络
+class SimpleClassifier(nn.Module):
+    def __init__(self, input_dim, hidden_dims, output_dim):  # 修改：hidden_dims改为列表
+        super(SimpleClassifier, self).__init__()
+        layers = []
+        prev_dim = input_dim
+
+        # 动态构建隐藏层：根据hidden_dims列表创建相应层数
+        for hidden_dim in hidden_dims:
+            layers.append(nn.Linear(prev_dim, hidden_dim))
+            layers.append(nn.ReLU())
+            prev_dim = hidden_dim
+
+        # 输出层
+        layers.append(nn.Linear(prev_dim, output_dim))
+
+        self.model = nn.Sequential(*layers)  # 使用Sequential组合所有层
+        self.hidden_dims = hidden_dims
+
+    def forward(self, x):
+        return self.model(x)  # 简化forward函数
+
+
+# ================ 修改2：创建训练函数 ================
+# 新增：封装训练过程，便于多次调用不同配置
+def train_model(model_config, dataloader, vocab_size, output_dim, num_epochs=10):
+    """训练单个模型并返回loss历史"""
+    model = SimpleClassifier(vocab_size, model_config['hidden_dims'], output_dim)
+    criterion = nn.CrossEntropyLoss()
+    optimizer = optim.SGD(model.parameters(), lr=0.01)
+
+    loss_history = []  # 记录每个epoch的loss
+
+    for epoch in range(num_epochs):
+        model.train()
+        running_loss = 0.0
+        for idx, (inputs, labels) in enumerate(dataloader):
+            optimizer.zero_grad()
+            outputs = model(inputs)
+            loss = criterion(outputs, labels)
+            loss.backward()
+            optimizer.step()
+            running_loss += loss.item()
+
+        epoch_loss = running_loss / len(dataloader)
+        loss_history.append(epoch_loss)
+
+        if (epoch + 1) % 2 == 0:
+            print(f"{model_config['name']} - Epoch [{epoch + 1}/{num_epochs}], Loss: {epoch_loss:.4f}")
+
+    return loss_history  # 返回loss历史用于对比
+
+
+# ================ 修改3：定义多个模型配置 ================
+# 新增：定义不同层数和节点数的组合进行对比
+char_dataset = CharBoWDataset(texts, numerical_labels, char_to_index, max_len, vocab_size)
+dataloader = DataLoader(char_dataset, batch_size=32, shuffle=True)
+output_dim = len(label_to_index)
+
+# 定义6种不同的模型配置进行对比
+model_configs = [
+    {'name': '单层-64节点', 'hidden_dims': [64]},  # 对比：节点数影响
+    {'name': '单层-128节点', 'hidden_dims': [128]},  # 对比：节点数影响
+    {'name': '单层-256节点', 'hidden_dims': [256]},  # 对比：节点数影响
+    {'name': '双层-128-64', 'hidden_dims': [128, 64]},  # 对比：层数影响
+    {'name': '双层-256-128', 'hidden_dims': [256, 128]},  # 对比：层数+节点数
+    {'name': '三层-256-128-64', 'hidden_dims': [256, 128, 64]},  # 对比：更深层数
+]
+
+# ================ 修改4：训练所有配置并记录结果 ================
+# 修改：从训练单个模型改为训练多个模型进行对比
+results = {}  # 存储所有模型的loss历史
+for config in model_configs:
+    print(f"\n开始训练: {config['name']}")
+    loss_history = train_model(config, dataloader, vocab_size, output_dim)
+    results[config['name']] = loss_history
+
+# ================ 修改5：绘制loss对比图 ================
+# 新增：可视化不同模型的训练过程对比
+plt.figure(figsize=(12, 6))
+for model_name, loss_history in results.items():
+    plt.plot(loss_history, label=model_name, linewidth=2)
+
+plt.xlabel('Epoch')
+plt.ylabel('Loss')
+plt.title('不同模型配置的Loss对比')
+plt.legend()
+plt.grid(True, alpha=0.3)
+plt.tight_layout()
+plt.savefig('model_loss_comparison.png')
+plt.show()
+
+# ================ 修改6：输出对比结果 ================
+# 新增：定量分析各模型的最终性能
+print("\n" + "=" * 50)
+print("各模型最终Loss对比")
+print("=" * 50)
+for model_name, loss_history in results.items():
+    print(f"{model_name}: 最终Loss = {loss_history[-1]:.4f}")
+
+
+# 保留原有的预测功能（结构不变，但需要重新训练最佳模型）
+def classify_text(text, model, char_to_index, vocab_size, max_len, index_to_label):
+    tokenized = [char_to_index.get(char, 0) for char in text[:max_len]]
+    tokenized += [0] * (max_len - len(tokenized))
+
+    bow_vector = torch.zeros(vocab_size)
+    for index in tokenized:
+        if index != 0:
+            bow_vector[index] += 1
+
+    bow_vector = bow_vector.unsqueeze(0)
+
+    model.eval()
+    with torch.no_grad():
+        output = model(bow_vector)
+
+    _, predicted_index = torch.max(output, 1)
+    predicted_index = predicted_index.item()
+    predicted_label = index_to_label[predicted_index]
+
+    return predicted_label
+
+
+# 新增：选择最佳模型逻辑
+best_model_name = min(results.items(), key=lambda x: x[1][-1])[0]
+best_config = next(config for config in model_configs if config['name'] == best_model_name)
+print(f"\n最佳模型: {best_model_name} (最终Loss: {results[best_model_name][-1]:.4f})")
+
+index_to_label = {i: label for label, i in label_to_index.items()}
+
+new_text = "帮我导航到北京"
+print("注：需要重新训练最佳模型以获得准确预测")

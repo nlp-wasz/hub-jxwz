@@ -1,0 +1,210 @@
+1.手动实现 bert模型 训练和评估（ab压测信息如下）
+①请求：100  并发：1
+Concurrency Level:      1
+Time taken for tests:   43.975 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      17400 bytes
+Total body sent:        19200
+HTML transferred:       3000 bytes
+Requests per second:    2.27 [#/sec] (mean)
+Time per request:       439.753 [ms] (mean)
+Time per request:       439.753 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.39 [Kbytes/sec] received
+                        0.43 kb/s sent
+                        0.81 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.4      0       1
+Processing:   399  439  31.8    435     584
+Waiting:      399  439  31.8    435     583
+Total:        399  440  31.8    435     584
+
+Percentage of the requests served within a certain time (ms)
+  50%    435
+  66%    442
+  75%    450
+  80%    459
+  90%    474
+  95%    503
+  98%    555
+  99%    584
+ 100%    584 (longest request)
+
+
+
+②请求：100  并发：5
+Concurrency Level:      5
+Time taken for tests:   31.789 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      17400 bytes
+Total body sent:        19200
+HTML transferred:       3000 bytes
+Requests per second:    3.15 [#/sec] (mean)
+Time per request:       1589.442 [ms] (mean)
+Time per request:       317.888 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.53 [Kbytes/sec] received
+                        0.59 kb/s sent
+                        1.12 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.5      0       1
+Processing:   353 1561 164.8   1572    1911
+Waiting:      352 1560 164.6   1571    1909
+Total:        354 1562 164.8   1572    1911
+
+Percentage of the requests served within a certain time (ms)
+  50%   1572
+  66%   1599
+  75%   1630
+  80%   1645
+  90%   1680
+  95%   1829
+  98%   1863
+  99%   1911
+ 100%   1911 (longest request)
+
+
+③请求：100  并发：10
+Concurrency Level:      10
+Time taken for tests:   52.526 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      17400 bytes
+Total body sent:        19200
+HTML transferred:       3000 bytes
+Requests per second:    1.90 [#/sec] (mean)
+Time per request:       5252.605 [ms] (mean)
+Time per request:       525.261 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.32 [Kbytes/sec] received
+                        0.36 kb/s sent
+                        0.68 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.5      0       1
+Processing:   516 5154 2054.3   4184   10351
+Waiting:      514 5150 2054.8   4181   10351
+Total:        516 5154 2054.3   4185   10351
+
+Percentage of the requests served within a certain time (ms)
+  50%   4185
+  66%   4895
+  75%   6144
+  80%   6927
+  90%  10199
+  95%  10245
+  98%  10313
+  99%  10351
+ 100%  10351 (longest request)
+
+
+
+2.Trainer自动实现 bert模型 训练和评估（ab压测信息如下）
+①请求：100  并发：1
+Concurrency Level:      1
+Time taken for tests:   31.586 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      17400 bytes
+Total body sent:        19200
+HTML transferred:       3000 bytes
+Requests per second:    3.17 [#/sec] (mean)
+Time per request:       315.857 [ms] (mean)
+Time per request:       315.857 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.54 [Kbytes/sec] received
+                        0.59 kb/s sent
+                        1.13 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.4      0       1
+Processing:   207  316  38.7    323     453
+Waiting:      207  315  38.7    323     453
+Total:        208  316  38.7    323     453
+
+Percentage of the requests served within a certain time (ms)
+  50%    323
+  66%    330
+  75%    334
+  80%    336
+  90%    346
+  95%    358
+  98%    432
+  99%    453
+ 100%    453 (longest request)
+
+
+②请求：100  并发：5
+Concurrency Level:      5
+Time taken for tests:   27.820 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      17400 bytes
+Total body sent:        19200
+HTML transferred:       3000 bytes
+Requests per second:    3.59 [#/sec] (mean)
+Time per request:       1391.023 [ms] (mean)
+Time per request:       278.205 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.61 [Kbytes/sec] received
+                        0.67 kb/s sent
+                        1.28 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.4      0       1
+Processing:   358 1365 578.0   1251    4731
+Waiting:      357 1364 578.4   1249    4731
+Total:        358 1366 578.1   1251    4732
+
+Percentage of the requests served within a certain time (ms)
+  50%   1251
+  66%   1423
+  75%   1526
+  80%   1644
+  90%   1798
+  95%   2294
+  98%   4038
+  99%   4732
+ 100%   4732 (longest request)
+
+
+③请求：100  并发：10
+Concurrency Level:      10
+Time taken for tests:   29.110 seconds
+Complete requests:      100
+Failed requests:        0
+Total transferred:      17400 bytes
+Total body sent:        19200
+HTML transferred:       3000 bytes
+Requests per second:    3.44 [#/sec] (mean)
+Time per request:       2911.027 [ms] (mean)
+Time per request:       291.103 [ms] (mean, across all concurrent requests)
+Transfer rate:          0.58 [Kbytes/sec] received
+                        0.64 kb/s sent
+                        1.23 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.4      0       1
+Processing:   262 2821 654.4   2923    4311
+Waiting:      261 2819 654.3   2920    4310
+Total:        263 2821 654.4   2924    4311
+
+Percentage of the requests served within a certain time (ms)
+  50%   2924
+  66%   3023
+  75%   3133
+  80%   3226
+  90%   3482
+  95%   3765
+  98%   4216
+  99%   4311
+ 100%   4311 (longest request)
+
+
+
+

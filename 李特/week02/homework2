@@ -1,0 +1,76 @@
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+
+X_numpy = np.linspace(-2 * np.pi, 2 * np.pi, 200).reshape(-1, 1)
+y_numpy = np.sin(X_numpy) + 0.05 * np.random.randn(200, 1)  # 减少噪声
+
+X = torch.from_numpy(X_numpy).float()
+y = torch.from_numpy(y_numpy).float()
+
+print("Sin函数数据生成完成。")
+print("---" * 10)
+
+class BetterNet(torch.nn.Module):
+    def __init__(self):
+        super(BetterNet, self).__init__()
+        self.layer1 = torch.nn.Linear(1, 64)
+        self.layer2 = torch.nn.Linear(64, 64)
+        self.layer3 = torch.nn.Linear(64, 32)
+        self.layer4 = torch.nn.Linear(32, 1)
+        self.tanh = torch.nn.Tanh()  # 使用Tanh激活函数，更适合周期函数
+
+    def forward(self, x):
+        x = self.tanh(self.layer1(x))
+        x = self.tanh(self.layer2(x))
+        x = self.tanh(self.layer3(x))
+        x = self.layer4(x)
+        return x
+
+
+
+model = BetterNet()
+loss_fn = torch.nn.MSELoss()
+optimizer = torch.optim.Adam(model.parameters(), lr=0.005)  # 使用Adam优化器
+
+print("开始训练...")
+print("---" * 10)
+
+num_epochs = 5000
+losses = []
+
+for epoch in range(num_epochs):
+    y_pred = model(X)
+    loss = loss_fn(y_pred, y)
+    losses.append(loss.item())
+
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+
+    if (epoch + 1) % 500 == 0:
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.6f}')
+
+print("\n训练完成！")
+print("---" * 10)
+
+model.eval()
+with torch.no_grad():
+    X_test = torch.linspace(-2 * np.pi, 2 * np.pi, 300).reshape(-1, 1).float()
+    y_test = model(X_test)
+    y_true = torch.sin(X_test)
+
+plt.figure(figsize=(12, 5))
+
+
+plt.scatter(X_numpy, y_numpy, label='data', color='blue', alpha=0.6, s=20)
+plt.plot(X_test.numpy(), y_true.numpy(), label='sin', color='green', linestyle='--', linewidth=2)
+plt.plot(X_test.numpy(), y_test.numpy(), label='predicate', color='red', linewidth=2)
+plt.xlabel('X')
+plt.ylabel('y')
+plt.title('Sin result')
+plt.legend()
+plt.grid(True)
+
+plt.show()
+

@@ -1,0 +1,120 @@
+2025-09-18 19:55:44,335 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-09-18 19:55:44,335 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("authors")
+2025-09-18 19:55:44,335 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("authors")
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("books")
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("books")
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("borrowers")
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("borrowers")
+2025-09-18 19:55:44,336 INFO sqlalchemy.engine.Engine [raw sql] ()
+2025-09-18 19:55:44,337 INFO sqlalchemy.engine.Engine 
+CREATE TABLE authors (
+        author_id INTEGER NOT NULL, 
+        name VARCHAR NOT NULL, 
+        nationality VARCHAR, 
+        PRIMARY KEY (author_id)
+)
+
+
+2025-09-18 19:55:44,337 INFO sqlalchemy.engine.Engine [no key 0.00003s] ()
+2025-09-18 19:55:44,338 INFO sqlalchemy.engine.Engine 
+CREATE TABLE borrowers (
+        borrower_id INTEGER NOT NULL, 
+        name VARCHAR NOT NULL, 
+        email VARCHAR, 
+        PRIMARY KEY (borrower_id), 
+        UNIQUE (email)
+)
+
+
+2025-09-18 19:55:44,338 INFO sqlalchemy.engine.Engine [no key 0.00003s] ()
+2025-09-18 19:55:44,338 INFO sqlalchemy.engine.Engine 
+CREATE TABLE books (
+        book_id INTEGER NOT NULL, 
+        title VARCHAR NOT NULL, 
+        published_year INTEGER, 
+        author_id INTEGER, 
+        PRIMARY KEY (book_id), 
+        FOREIGN KEY(author_id) REFERENCES authors (author_id)
+)
+
+
+2025-09-18 19:55:44,338 INFO sqlalchemy.engine.Engine [no key 0.00002s] ()
+2025-09-18 19:55:44,339 INFO sqlalchemy.engine.Engine COMMIT
+数据库和表已成功创建。
+
+--- 插入数据 ---
+2025-09-18 19:55:44,341 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-09-18 19:55:44,342 INFO sqlalchemy.engine.Engine INSERT INTO authors (name, nationality) VALUES (?, ?) RETURNING author_id
+2025-09-18 19:55:44,342 INFO sqlalchemy.engine.Engine [generated in 0.00005s (insertmanyvalues) 1/2 (ordered; batch not supported)] ('J.K. Rowling', 'British')
+2025-09-18 19:55:44,342 INFO sqlalchemy.engine.Engine INSERT INTO authors (name, nationality) VALUES (?, ?) RETURNING author_id
+2025-09-18 19:55:44,342 INFO sqlalchemy.engine.Engine [insertmanyvalues 2/2 (ordered; batch not supported)] ('Mo Yan', 'Chinese')
+2025-09-18 19:55:44,343 INFO sqlalchemy.engine.Engine INSERT INTO borrowers (name, email) VALUES (?, ?) RETURNING borrower_id
+2025-09-18 19:55:44,343 INFO sqlalchemy.engine.Engine [generated in 0.00005s (insertmanyvalues) 1/2 (ordered; batch not supported)] ('Alice', 'alice@example.com')
+2025-09-18 19:55:44,343 INFO sqlalchemy.engine.Engine INSERT INTO borrowers (name, email) VALUES (?, ?) RETURNING borrower_id
+2025-09-18 19:55:44,343 INFO sqlalchemy.engine.Engine [insertmanyvalues 2/2 (ordered; batch not supported)] ('Bob', 'bob@example.com')
+2025-09-18 19:55:44,343 INFO sqlalchemy.engine.Engine INSERT INTO books (title, published_year, author_id) VALUES (?, ?, ?) RETURNING book_id
+2025-09-18 19:55:44,343 INFO sqlalchemy.engine.Engine [generated in 0.00004s (insertmanyvalues) 1/2 (ordered; batch not supported)] ('Harry Potter', 1997, 1)
+2025-09-18 19:55:44,344 INFO sqlalchemy.engine.Engine INSERT INTO books (title, published_year, author_id) VALUES (?, ?, ?) RETURNING book_id
+2025-09-18 19:55:44,344 INFO sqlalchemy.engine.Engine [insertmanyvalues 2/2 (ordered; batch not supported)] ('Frog', 1981, 2)
+2025-09-18 19:55:44,344 INFO sqlalchemy.engine.Engine COMMIT
+数据已成功插入。
+
+--- 所有书籍和它们的作者 ---
+2025-09-18 19:55:44,344 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-09-18 19:55:44,345 INFO sqlalchemy.engine.Engine SELECT books.book_id AS books_book_id, books.title AS books_title, books.published_year AS books_published_year, books.author_id AS books_author_id 
+FROM books JOIN authors ON authors.author_id = books.author_id
+2025-09-18 19:55:44,345 INFO sqlalchemy.engine.Engine [generated in 0.00007s] ()
+2025-09-18 19:55:44,346 INFO sqlalchemy.engine.Engine SELECT authors.author_id AS authors_author_id, authors.name AS authors_name, authors.nationality AS authors_nationality 
+FROM authors 
+WHERE authors.author_id = ?
+2025-09-18 19:55:44,346 INFO sqlalchemy.engine.Engine [generated in 0.00008s] (1,)
+书籍: Harry Potter, 作者: J.K. Rowling
+2025-09-18 19:55:44,347 INFO sqlalchemy.engine.Engine SELECT authors.author_id AS authors_author_id, authors.name AS authors_name, authors.nationality AS authors_nationality 
+FROM authors 
+WHERE authors.author_id = ?
+2025-09-18 19:55:44,347 INFO sqlalchemy.engine.Engine [cached since 0.0005238s ago] (2,)
+书籍: Frog, 作者: Mo Yan
+
+--- 更新书籍信息 ---
+2025-09-18 19:55:44,347 INFO sqlalchemy.engine.Engine SELECT books.book_id AS books_book_id, books.title AS books_title, books.published_year AS books_published_year, books.author_id AS books_author_id 
+FROM books 
+WHERE books.title = ?
+ LIMIT ? OFFSET ?
+2025-09-18 19:55:44,347 INFO sqlalchemy.engine.Engine [generated in 0.00006s] ('Frog', 1, 0)
+2025-09-18 19:55:44,348 INFO sqlalchemy.engine.Engine UPDATE books SET published_year=? WHERE books.book_id = ?
+2025-09-18 19:55:44,348 INFO sqlalchemy.engine.Engine [generated in 0.00005s] (1998, 2)
+2025-09-18 19:55:44,348 INFO sqlalchemy.engine.Engine COMMIT
+书籍 'Frog' 的出版年份已更新。
+2025-09-18 19:55:44,349 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-09-18 19:55:44,349 INFO sqlalchemy.engine.Engine SELECT books.book_id AS books_book_id, books.title AS books_title, books.published_year AS books_published_year, books.author_id AS books_author_id 
+FROM books 
+WHERE books.title = ?
+ LIMIT ? OFFSET ?
+2025-09-18 19:55:44,349 INFO sqlalchemy.engine.Engine [cached since 0.001648s ago] ('Frog', 1, 0)
+更新后的信息: 书籍: Frog, 出版年份: 1998
+
+--- 删除借阅人 ---
+2025-09-18 19:55:44,349 INFO sqlalchemy.engine.Engine SELECT borrowers.borrower_id AS borrowers_borrower_id, borrowers.name AS borrowers_name, borrowers.email AS borrowers_email 
+FROM borrowers 
+WHERE borrowers.name = ?
+ LIMIT ? OFFSET ?
+2025-09-18 19:55:44,349 INFO sqlalchemy.engine.Engine [generated in 0.00005s] ('Bob', 1, 0)
+2025-09-18 19:55:44,350 INFO sqlalchemy.engine.Engine DELETE FROM borrowers WHERE borrowers.borrower_id = ?
+2025-09-18 19:55:44,350 INFO sqlalchemy.engine.Engine [generated in 0.00004s] (2,)
+2025-09-18 19:55:44,350 INFO sqlalchemy.engine.Engine COMMIT
+借阅人 'Bob' 已被删除。
+
+--- 剩余的借阅人 ---
+2025-09-18 19:55:44,351 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+2025-09-18 19:55:44,351 INFO sqlalchemy.engine.Engine SELECT borrowers.borrower_id AS borrowers_borrower_id, borrowers.name AS borrowers_name, borrowers.email AS borrowers_email 
+FROM borrowers
+2025-09-18 19:55:44,351 INFO sqlalchemy.engine.Engine [generated in 0.00006s] ()
+姓名: Alice
+2025-09-18 19:55:44,351 INFO sqlalchemy.engine.Engine ROLLBACK
+
+会话已关闭。

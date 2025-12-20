@@ -1,0 +1,48 @@
+字段名 (Field Name)					数据类型 (Data Type)						是否主键 (Primary Key)								描述 (Description)
+id									VARCHAR									是													文档的唯一标识符（如UUID）
+
+embedding							FLOAT_VECTOR							否	          										核心字段,所有模态数据
+																																（文本、图、表）转换成的统一向量,
+																																维度由选定的模型决定
+
+
+modal_type(0:纯文本，1:图像，2：表格)	INT64									否													模态类型标识
+
+
+content(文本:存储原文片段;
+图像:存储图像的详细文本描述,
+由VLM模型生成;
+表格:存储表格的规范化文本描
+述或关键数据摘要)						VARCHAR									否													原始内容或文本描述
+
+metadata							JSON									否													扩展数据,用于存储丰富
+																																的上下文和过滤信息
+
+
+
+
+
+{
+    "source": "公司年报_2023.pdf",
+    "source_type": "pdf",
+    "page_number": 10,
+    "bounding_box": None, # 对于图像，可存储其在原文件中的位置[x, y, w, h]
+    # 「图像」
+    "image_info": {
+        "original_path": "/data/images/chart_1.png",
+        "format": "png",
+        "caption": "2023年Q1至Q4季度营收与利润趋势图，显示营收稳步增长...",
+        "ocr_text": ["营收", "Q1", "100M", ...] # 从图中提取的文字
+    },
+    # 「表格」
+    "table_info": {
+        "original_caption": "表3： 各地区销售业绩",
+        "columns": ["地区", "Q1销售额", "Q2销售额"],
+        "data_summary": "华北地区Q1销售额领先，华东地区Q2增长最快...",
+        "structured_data_ref": "table_3.json"  # 可选：存储表格的结构化数据路径或索引，供后续精确查询
+    },
+    # 「文本」
+    "text_info": {
+        "section_title": "第三节： 市场分析"
+    }
+}

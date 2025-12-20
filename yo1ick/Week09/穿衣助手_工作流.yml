@@ -1,0 +1,182 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 穿衣助手_工作流
+  use_icon_as_answer_icon: false
+kind: app
+version: 0.1.5
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: start
+        targetType: llm
+      id: 1761222117393-source-1761222123961-target
+      source: '1761222117393'
+      sourceHandle: source
+      target: '1761222123961'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: end
+      id: 1761222123961-source-1761223410036-target
+      source: '1761222123961'
+      sourceHandle: source
+      target: '1761223410036'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - label: temperature
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: temperature
+        - label: weather
+          max_length: 48
+          options:
+          - 晴天
+          - 雨天
+          - 阴天
+          - 雪天
+          required: true
+          type: select
+          variable: weather
+        - label: humidity
+          max_length: 48
+          options: []
+          required: true
+          type: number
+          variable: humidity
+      height: 142
+      id: '1761222117393'
+      position:
+        x: 88
+        y: 282
+      positionAbsolute:
+        x: 88
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: deepseek
+        prompt_template:
+        - id: bade40e7-d141-4374-9848-169461ab8a80
+          role: system
+          text: 今天的温度是{{#1761222117393.temperature#}}，天气是{{#1761222117393.weather#}}℃，湿度是{{#1761222117393.humidity#}}%，请根据以上信息为我提供穿衣指南
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 98
+      id: '1761222123961'
+      position:
+        x: 407
+        y: 282
+      positionAbsolute:
+        x: 407
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    - data:
+        desc: ''
+        outputs:
+        - value_selector:
+          - '1761222123961'
+          - text
+          variable: info
+        selected: false
+        title: 结束
+        type: end
+      height: 90
+      id: '1761223410036'
+      position:
+        x: 711
+        y: 282
+      positionAbsolute:
+        x: 711
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 244
+    viewport:
+      x: -43
+      y: 55
+      zoom: 1

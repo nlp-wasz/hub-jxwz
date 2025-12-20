@@ -1,0 +1,137 @@
+RAG（Retrieval-Augmented Generation）实现流程总结文档
+
+一、RAG 概述
+RAG（Retrieval-Augmented Generation，检索增强生成）是一种结合检索系统与大语言模型（LLM） 的技术框架。其核心思想是通过从外部知识库中检索相关信息，并将其作为上下文输入给LLM，从而生成更准确、更具时效性、更可靠的回答。
+
+RAG 的优势：
+减少幻觉：基于真实数据生成答案
+
+提升时效性：可动态更新知识库
+
+增强可解释性：答案来源可追溯
+
+支持多模态：可处理文本、表格、图像等
+
+二、RAG 核心流程
+RAG 的实现可分为三个主要阶段：
+
+1. 数据预处理与索引构建（Indexing）
+文档解析：解析多种格式的文档（PDF、DOC、HTML、Excel等），提取文本、表格、图像等内容。
+
+文本切分（Chunking）：将长文本切分为语义连贯的片段（chunks），常用方法包括：
+
+固定大小分块
+
+滑动窗口分块
+
+语义分块（Semantic Chunking）
+
+递归分块（Recursive Chunking）
+
+向量化（Embedding）：使用文本嵌入模型（如BERT、Qwen-Embedding）将文本转换为向量。
+
+构建索引：
+
+向量索引（如FAISS、Chroma）
+
+倒排索引（如Elasticsearch）
+
+图索引（如Neo4j，用于GraphRAG）
+
+2. 检索阶段（Retrieval）
+查询理解：识别用户意图，可能进行：
+
+关键词提取
+
+查询重写（Query Rewriting）
+
+问题分解（Problem Decomposition）
+
+多路召回：
+
+向量检索（语义相似度）
+
+全文检索（BM25/TF-IDF）
+
+混合检索（Hybrid Search）
+
+重排序（Reranking）：使用交叉编码器（Cross-Encoder）对召回结果重新排序，提升TOP结果的相关性。
+
+3. 生成阶段（Generation）
+提示词构建（Prompt Engineering）：将检索到的上下文与用户问题组合成提示词，例如：
+
+plaintext
+你是一个政府事务专家，请根据以下资料回答问题：
+资料：
+{context}
+
+问题：
+{question}
+LLM 生成答案：调用大模型（如DeepSeek、GPT、Qwen）生成最终答案。
+
+后处理与输出：可能包括答案格式化、引用标注、图像插入等。
+
+三、政企问答项目中的RAG实现特点
+数据特点：
+数据源多样：政府公文、FAQ、办事指南、新闻等
+
+格式复杂：含表格、图像、跨页内容
+
+数据量不大但覆盖窄：约1万条非结构化数据
+
+技术挑战与解决方案：
+挑战	解决方案
+表格/图像解析	使用PaddleOCR、Qwen-VL、DeepDoc等工具
+多轮问答	基于Session的上下文管理 + 意图识别
+文档更新与版本控制	建立文档关系图谱 + 增量更新机制
+检索稳定性	多路召回 + 重排序模型（如Qwen-Reranker）
+系统架构（参考项目后端模块）：
+算法模块：嵌入、重排序、关键词提取、分类、OCR
+
+数据模块：文档/FAQ的CRUD管理
+
+问答模块：智能问答、历史记录、联想提问
+
+四、RAG 进阶技术与优化策略
+1. 高级RAG类型：
+Naive RAG：基础版（索引-检索-生成）
+
+Advanced RAG：加入预处理、重排序、上下文压缩等
+
+Modular RAG：模块化设计，支持自定义流程（如图谱检索、多模态处理）
+
+2. 检索优化技术：
+HyDE：假设性文档嵌入
+
+Step-Back Prompting：抽象问题检索
+
+Multi-Query Retrieval：多查询生成
+
+GraphRAG：基于知识图谱的检索
+
+3. 效果评估指标：
+Chunk Attribution：分块归因
+
+Chunk Utilization：分块利用率
+
+LLM-as-a-Judge：使用LLM自动评估回答质量
+
+4. 性能优化：
+RAGSchema优化：合理配置各模块资源
+
+缓存机制：缓存频繁检索的结果
+
+异步处理：并行处理检索与生成任务
+
+五、典型工具与模型推荐
+模块	推荐工具/模型
+文档解析	Unstructured、PaddleOCR、DeepDoc
+文本嵌入	Qwen-Embedding、BGE、E5
+重排序	Qwen-Reranker、BGE-Reranker
+向量数据库	FAISS、Chroma、Weaviate
+全文检索	Elasticsearch、BM25
+LLM	DeepSeek、GPT-4、Qwen、Llama
+
+六、总结
+RAG 技术通过结合检索系统与生成模型，有效弥补了纯LLM在准确性、时效性和可信度方面的不足。在政企问答场景中，RAG 能更好地处理复杂格式文档、多轮对话和实时数据更新需求。未来可结合图谱检索、多模态理解、自动化评估等进阶技术，进一步提升系统性能与用户体验。
+

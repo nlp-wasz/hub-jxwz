@@ -1,0 +1,26 @@
+import pandas as pd
+import jieba
+from sklearn.feature_extraction.text import TfidfVectorizer, CountVectorizer
+from sklearn.neighbors import KNeighborsClassifier
+
+dataset = pd.read_csv('dataset.csv',sep="\t", header=None)
+
+input_sent = dataset[0].apply(lambda x: " ".join(jieba.lcut(x)))
+
+vector = CountVectorizer()
+vector.fit(input_sent.values)
+input_features = vector.transform(input_sent.values)
+model = KNeighborsClassifier()
+model.fit(input_features, dataset[1].values)
+
+test_question = '我推荐你一部电影叫碟中谍'
+test_sentence = ' '.join(jieba.lcut(test_question))
+print(model.predict(vector.transform([test_sentence])))
+
+test_question = '我要看三角洲行动的游戏视频'
+test_sentence = ' '.join(jieba.lcut(test_question))
+print(model.predict(vector.transform([test_sentence])))
+
+test_question = '订一张国庆飞往武汉的机票'
+test_sentence = ' '.join(jieba.lcut(test_question))
+print(model.predict(vector.transform([test_sentence])))

@@ -1,0 +1,52 @@
+Batch 个数 0, 当前Batch Loss: 2.4798052310943604
+Batch 个数 100, 当前Batch Loss: 2.4615402221679688
+Batch 个数 200, 当前Batch Loss: 2.4547386169433594
+Batch 个数 300, 当前Batch Loss: 2.419393301010132
+Epoch [1/10], Loss: 2.4521
+Batch 个数 0, 当前Batch Loss: 2.434779644012451
+Batch 个数 100, 当前Batch Loss: 2.4341342449188232
+Batch 个数 200, 当前Batch Loss: 2.4228923320770264
+Batch 个数 300, 当前Batch Loss: 2.4189908504486084
+Epoch [2/10], Loss: 2.4061
+Batch 个数 0, 当前Batch Loss: 2.352994918823242
+Batch 个数 100, 当前Batch Loss: 2.3435733318328857
+Batch 个数 200, 当前Batch Loss: 2.3881003856658936
+Batch 个数 300, 当前Batch Loss: 2.3462929725646973
+Epoch [3/10], Loss: 2.3776
+Batch 个数 0, 当前Batch Loss: 2.3849899768829346
+Batch 个数 100, 当前Batch Loss: 2.368557929992676
+Batch 个数 200, 当前Batch Loss: 2.3283698558807373
+Batch 个数 300, 当前Batch Loss: 2.3171026706695557
+Epoch [4/10], Loss: 2.3591
+Batch 个数 0, 当前Batch Loss: 2.3538341522216797
+Batch 个数 100, 当前Batch Loss: 2.364293098449707
+Batch 个数 200, 当前Batch Loss: 2.35357403755188
+Batch 个数 300, 当前Batch Loss: 2.394437313079834
+Epoch [5/10], Loss: 2.3454
+Batch 个数 0, 当前Batch Loss: 2.3464841842651367
+Batch 个数 100, 当前Batch Loss: 2.293242931365967
+Batch 个数 200, 当前Batch Loss: 2.2837727069854736
+Batch 个数 300, 当前Batch Loss: 2.3901865482330322
+Epoch [6/10], Loss: 2.3307
+Batch 个数 0, 当前Batch Loss: 2.4782493114471436
+Batch 个数 100, 当前Batch Loss: 2.288065195083618
+Batch 个数 200, 当前Batch Loss: 2.212557077407837
+Batch 个数 300, 当前Batch Loss: 2.2075884342193604
+Epoch [7/10], Loss: 2.3044
+Batch 个数 0, 当前Batch Loss: 2.46207332611084
+Batch 个数 100, 当前Batch Loss: 2.155956983566284
+Batch 个数 200, 当前Batch Loss: 2.289419651031494
+Batch 个数 300, 当前Batch Loss: 2.208624839782715
+Epoch [8/10], Loss: 2.2252
+Batch 个数 0, 当前Batch Loss: 2.197589159011841
+Batch 个数 100, 当前Batch Loss: 2.0522983074188232
+Batch 个数 200, 当前Batch Loss: 2.030172824859619
+Batch 个数 300, 当前Batch Loss: 1.9739817380905151
+Epoch [9/10], Loss: 1.9843
+Batch 个数 0, 当前Batch Loss: 1.9735256433486938
+Batch 个数 100, 当前Batch Loss: 1.9374988079071045
+Batch 个数 200, 当前Batch Loss: 1.7043060064315796
+Batch 个数 300, 当前Batch Loss: 1.6081418991088867
+Epoch [10/10], Loss: 1.6930
+
+进程已结束，退出代码为 0

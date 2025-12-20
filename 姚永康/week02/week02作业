@@ -1,0 +1,67 @@
+import torch
+import numpy as np
+import matplotlib.pyplot as plt
+import torch.nn as nn
+
+# 1. 生成模拟数据 (与之前相同)
+X_numpy = np.linspace(0, 2 * np.pi, 100).reshape(-1, 1)
+y_numpy = np.sin(X_numpy) + 0.1 * np.random.randn(100, 1)
+
+X = torch.from_numpy(X_numpy).float()
+y = torch.from_numpy(y_numpy).float()
+
+print("数据生成完成。")
+print("---" * 10)
+
+
+# 多层神经网络
+class SinModel(nn.Module):
+    def __init__(self,input_size, hidden_size1, hidden_size2, output_size):
+        super(SinModel, self).__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_size, hidden_size1),
+            nn.ReLU(),
+            nn.Linear(hidden_size1, hidden_size2),
+            nn.ReLU(),
+            nn.Linear(hidden_size2, output_size)
+        )
+
+    def forward(self, x):
+        x = self.model(x)
+        return x
+
+
+model = SinModel(1, 32, 64, 1)
+loss_fn = nn.MSELoss()
+optimizer = torch.optim.SGD(model.parameters(), lr=0.05)
+
+print("模型初始化完成---")
+
+# 训练模型
+num_epochs = 1000
+for epoch in range(num_epochs):
+    model.train()
+    # 前向传播：计算预测值 y_pred
+    y_pred = model(X)
+
+    loss = loss_fn(y_pred, y)
+    optimizer.zero_grad()
+    loss.backward()
+    optimizer.step()
+    # 每100个 epoch 打印一次损失
+    if (epoch + 1) % 100 == 0:
+        print(f'Epoch [{epoch + 1}/{num_epochs}], Loss: {loss.item():.4f}')
+
+#  绘制结果
+model.eval()
+with torch.no_grad():
+    y_predicted = model(X)
+
+plt.figure(figsize=(10, 6))
+plt.scatter(X_numpy, y_numpy, label='Raw data', color='blue', alpha=0.6)
+plt.plot(X_numpy, y_predicted, label=f'Model: y = sin(x) + noize', color='red', linewidth=2)
+plt.xlabel('X')
+plt.ylabel('y')
+plt.legend()
+plt.grid(True)
+plt.show()

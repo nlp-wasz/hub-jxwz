@@ -1,0 +1,220 @@
+# main.py
+import fitz, numpy as np, sympy as sp, json
+from mcp.server import Server
+from typing import List, Dict
+import mcp.types as types
+
+# 1. PDF解析器
+class PDFParser:
+    def parse(self, path: str) -> Dict:
+        doc = fitz.open(path)
+        formulas = []
+        for page in doc:
+            text = page.get_text()
+            for latex in self._extract_formulas(text):
+                formulas.append({
+                    'latex': latex,
+                    'page': page.number,
+                    'context': text[:200]
+                })
+        return {'file': path, 'formulas': formulas}
+    
+    def _extract_formulas(self, text: str) -> List[str]:
+        import re
+        # 简单提取 $...$ 和 $$...$$
+        return re.findall(r'\$([^$]+)\$|\$\$([^$]+)\$\$', text)
+
+# 2. 10个MCP工具（核心功能）
+class MathTools:
+    # 工具1: 统计
+    @staticmethod
+    def stats_mean(data: List[float]) -> float:
+        return np.mean(data)
+    
+    # 工具2: 微积分
+    @staticmethod
+    def calc_derivative(expr: str, var: str = 'x') -> str:
+        x = sp.symbols(var)
+        return str(sp.diff(sp.sympify(expr), x))
+    
+    # 工具3: 线性代数
+    @staticmethod
+    def linalg_eigen(matrix: List[List[float]]) -> Dict:
+        vals, vecs = np.linalg.eig(matrix)
+        return {'values': vals.tolist(), 'vectors': vecs.tolist()}
+    
+    # 工具4: 物理
+    @staticmethod
+    def physics_kinematics(v0: float, a: float, t: float) -> Dict:
+        return {'v': v0 + a*t, 's': v0*t + 0.5*a*t**2}
+    
+    # 工具5: 金融
+    @staticmethod
+    def finance_compound(P: float, r: float, t: int) -> float:
+        return P * (1 + r) ** t
+    
+    # 工具6: 信号处理
+    @staticmethod
+    def signal_fft(data: List[float]) -> List[complex]:
+        return np.fft.fft(data).tolist()
+    
+    # 工具7: 机器学习
+    @staticmethod
+    def ml_mse(y_true: List[float], y_pred: List[float]) -> float:
+        return np.mean((np.array(y_true) - np.array(y_pred))**2)
+    
+    # 工具8: 电路
+    @staticmethod
+    def circuit_ohms(V=None, I=None, R=None) -> Dict:
+        if V is None: return {'V': I*R}
+        if I is None: return {'I': V/R}
+        if R is None: return {'R': V/I}
+    
+    # 工具9: 量子力学
+    @staticmethod
+    def quantum_schrodinger(psi: str, V: str) -> str:
+        x = sp.symbols('x')
+        return str(-sp.diff(sp.sympify(psi), x, 2) + sp.sympify(V)*sp.sympify(psi))
+    
+    # 工具10: 经济学
+    @staticmethod
+    def econ_equilibrium(a: float, b: float, c: float, d: float) -> Dict:
+        """需求: P=a-bQ, 供给: P=c+dQ"""
+        Q = (a - c) / (b + d)
+        P = a - b * Q
+        return {'Q': Q, 'P': P}
+
+# 3. MCP服务器
+class FormulaServer:
+    def __init__(self):
+        self.server = Server("formula-server")
+        self.tools = MathTools()
+        self._setup()
+    
+    def _setup(self):
+        @self.server.list_tools()
+        async def list_tools():
+            return [
+                types.Tool(
+                    name="math_calculate",
+                    description="数学公式计算工具",
+                    inputSchema={
+                        "type": "object",
+                        "properties": {
+                            "tool": {"type": "string", "enum": [
+                                "stats", "calc", "linalg", "physics", "finance",
+                                "signal", "ml", "circuit", "quantum", "econ"
+                            ]},
+                            "operation": {"type": "string"},
+                            "args": {"type": "object"}
+                        },
+                        "required": ["tool"]
+                    }
+                )
+            ]
+        
+        @self.server.call_tool()
+        async def call_tool(name: str, arguments: dict):
+            tool = arguments.get("tool")
+            args = arguments.get("args", {})
+            
+            # 路由到对应工具
+            if tool == "stats":
+                if arguments.get("operation") == "mean":
+                    result = self.tools.stats_mean(args.get("data", []))
+            
+            elif tool == "calc":
+                if arguments.get("operation") == "derivative":
+                    result = self.tools.calc_derivative(
+                        args.get("expr", "x**2"), 
+                        args.get("var", "x")
+                    )
+            
+            elif tool == "linalg":
+                if arguments.get("operation") == "eigen":
+                    result = self.tools.linalg_eigen(args.get("matrix", [[1,0],[0,1]]))
+            
+            # ... 其他工具路由
+            
+            return [types.TextContent(type="text", text=json.dumps({"result": result}))]
+
+# 4. 主程序
+async def main():
+    # 解析PDF
+    parser = PDFParser()
+    for i in range(10):
+        formulas = parser.parse(f"doc{i+1}.pdf")
+        print(f"文档{i+1}: {len(formulas['formulas'])}个公式")
+    
+    # 启动MCP服务器
+    server = FormulaServer()
+    async with server.server.run_stdio():
+        await asyncio.Future()  # 永久运行
+
+if __name__ == "__main__":
+    import asyncio
+    asyncio.run(main())
+
+# config.yaml
+tools:
+  - name: "统计学"
+    operations: ["mean", "variance", "regression"]
+    engine: "numpy"
+  - name: "微积分" 
+    operations: ["derivative", "integral", "limit"]
+    engine: "sympy"
+  - name: "线性代数"
+    operations: ["eigen", "determinant", "solve"]
+    engine: "numpy"
+  - name: "物理力学"
+    operations: ["kinematics", "newton", "energy"]
+    engine: "sympy"
+  - name: "金融数学"
+    operations: ["compound", "present_value", "black_scholes"]
+    engine: "numpy"
+
+# client.py
+import requests
+
+# 调用示例
+requests = [
+    {
+        "tool": "stats",
+        "operation": "mean",
+        "args": {"data": [1, 2, 3, 4, 5]}
+    },
+    {
+        "tool": "calc", 
+        "operation": "derivative",
+        "args": {"expr": "x**2 + sin(x)", "var": "x"}
+    },
+    {
+        "tool": "physics",
+        "operation": "kinematics", 
+        "args": {"v0": 10, "a": 2, "t": 5}
+    }
+]
+
+# 通过MCP协议调用（这里简化展示）
+for req in requests:
+    print(f"调用 {req['tool']}: {req}")
+
+# requirements-minimal.txt
+pymupdf==1.23.0
+numpy==1.24.0
+sympy==1.12
+mcp==1.0.0
+
+# 1. 安装
+pip install -r requirements-minimal.txt
+
+# 2. 运行
+python main.py
+
+# 3. 调用工具
+# 通过MCP客户端连接，发送JSON请求：
+{
+  "tool": "calc",
+  "operation": "derivative",
+  "args": {"expr": "x**2", "var": "x"}
+}

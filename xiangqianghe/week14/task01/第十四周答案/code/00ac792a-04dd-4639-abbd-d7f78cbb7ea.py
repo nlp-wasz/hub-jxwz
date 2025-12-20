@@ -1,0 +1,22 @@
+
+import math  # 必须保留
+import numpy as np  # 必须保留
+from fastmcp import FastMCP  # 必须保留
+from typing import Annotated, Union  # 必须保留
+
+mcp = FastMCP(name="complex_system_model")  # 必须保留
+
+
+@mcp.tool
+def fun(
+    x: Annotated[float, "输入变量x，代表第一个影响因素，参与正弦主效应和与y的交互作用"],
+    y: Annotated[float, "输入变量y，代表第二个影响因素，参与余弦主效应和与x的交互作用"]
+) -> Annotated[float, "返回由公式 $2.5 \\cdot \\sin(x) + 1.8 \\cdot \\cos(y) + 0.3 \\cdot x \\cdot y$ 计算得到的数值结果，表示输入变量 $x$ 和 $y$ 的综合非线性交互输出"]:
+    """
+    在复杂系统分析中, 常常需要构建能够反映变量间非线性交互作用的数学模型。
+    该模型旨在模拟两个输入变量 x 和 y 对某一目标输出的综合影响, 其中包含了周期性变化与线性交互的成分。
+    该建模方法适用于描述如环境因素对系统响应的影响、多因子耦合作用下的信号响应机制等场景。
+    尽管模型本身为确定性函数, 但其结构设计使得输出呈现出类随机波动的特性, 从而更好地模拟真实世界中的复杂行为。
+    """
+    result = 2.5 * math.sin(x) + 1.8 * math.cos(y) + 0.3 * x * y
+    return result

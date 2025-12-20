@@ -1,0 +1,187 @@
+app:
+  description: 体验
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: workflow
+  name: 工作流体验
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.47@c6d9e43800aee0a9b71940310d320b8dd2214f98a725f8c8d79442aa5842dc77
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: start
+        targetType: parameter-extractor
+      id: 1761226002764-source-1761226034509-target
+      source: '1761226002764'
+      sourceHandle: source
+      target: '1761226034509'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: parameter-extractor
+        targetType: end
+      id: 1761226034509-source-1761226188886-target
+      source: '1761226034509'
+      sourceHandle: source
+      target: '1761226188886'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 用户输入
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: input
+      height: 87
+      id: '1761226002764'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        instruction: 你是一个实体抽取专家，现在需要从客户输入{{#1761226002764.input#}}中提取对应实体信息，然后以json格式进行输出
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-v3
+          provider: langgenius/tongyi/tongyi
+        parameters:
+        - description: 实体名称
+          name: name
+          required: false
+          type: string
+        - description: 用户年龄
+          name: age
+          required: false
+          type: number
+        query:
+        - '1761226002764'
+        - input
+        reasoning_mode: prompt
+        selected: false
+        title: 参数提取器
+        type: parameter-extractor
+        vision:
+          enabled: false
+      height: 87
+      id: '1761226034509'
+      position:
+        x: 380
+        y: 282
+      positionAbsolute:
+        x: 380
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        outputs:
+        - value_selector:
+          - '1761226034509'
+          - name
+          value_type: string
+          variable: name
+        - value_selector:
+          - '1761226034509'
+          - age
+          value_type: number
+          variable: age
+        selected: true
+        title: 结束
+        type: end
+      height: 113
+      id: '1761226188886'
+      position:
+        x: 682
+        y: 282
+      positionAbsolute:
+        x: 682
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 194
+      y: 135
+      zoom: 1
+  rag_pipeline_variables: []

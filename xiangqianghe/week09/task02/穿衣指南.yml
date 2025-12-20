@@ -1,0 +1,207 @@
+app:
+  description: 请输入天气情况，当前温度，湿度等信息，我会给你合理的穿衣建议
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 穿衣指南
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.47@c6d9e43800aee0a9b71940310d320b8dd2214f98a725f8c8d79442aa5842dc77
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        sourceType: start
+        targetType: llm
+      id: 1761226582228-llm
+      source: '1761226582228'
+      sourceHandle: source
+      target: llm
+      targetHandle: target
+      type: custom
+    - data:
+        sourceType: llm
+        targetType: answer
+      id: llm-answer
+      source: llm
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 今天天气情况
+          max_length: 48
+          options:
+          - 晴天
+          - 雨天
+          - 多云
+          - 阴天
+          placeholder: ''
+          required: true
+          type: select
+          variable: weather
+        - default: ''
+          hint: ''
+          label: 当前温度
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: number
+          variable: temperature
+        - default: ''
+          hint: ''
+          label: 当前湿度情况
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: false
+          type: number
+          variable: humidity
+      height: 139
+      id: '1761226582228'
+      position:
+        x: 80
+        y: 282
+      positionAbsolute:
+        x: 80
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        memory:
+          query_prompt_template: '{{#sys.query#}}
+
+
+            {{#sys.files#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 10
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-v3
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: 676feb38-6732-44d7-accd-b7257accef24
+          role: system
+          text: "你是一个出行穿搭专家，你需要根据用户输入的\n天气情况：{{#1761226582228.weather#}}\n温度情况：{{#1761226582228.temperature#}}\n\
+            湿度情况：{{#1761226582228.humidity#}}\n或者其他与出行相关的信息，告诉用户，今天出门如何穿搭最合理\n\n**1.\
+            \ 基本信息**\n*   **场合**：[例如：工作日通勤、周末约会、面试、朋友聚会、户外活动]\n*   **季节与温度**：[例如：春季15-20°C、冬季0-5°C、空调房内外切换]\n\
+            *   **核心诉求**：[例如：舒适度优先、需要专业感、希望显高、想尝试新风格]\n*   **性别**：[男性/女性]\n\n**2.\
+            \ 风格与偏好**\n*   **偏好风格**：[例如：极简风、温柔风、甜酷风、复古风、商务休闲 [2,8](@ref)]\n*   **偏好颜色**：[例如：中性色、莫兰迪色系、浅色系、允许少量亮色]\n\
+            *   **避免的元素**：[例如：避免短裙、避免高跟鞋、避免蕾丝]\n\n**3. 具体要求**\n*   **期望建议包含**：\n \
+            \   *   **具体搭配方案**：请说明上衣、下装/连衣裙、外套、鞋子和配饰的组合。\n    *   **穿搭逻辑**：简要解释为何这样搭配适合该场合/温度/我的身形。\n\
+            \    *   **备选方案**：提供1-2种可变换单品的方案（例如，将裤装换为裙装）。\n    *   **参考灵感**：如果可以，请提及类似的风格偶像或时尚趋势关键词。\n\
+            \n**4. 其他约束**\n*   **预算范围**：[例如：希望利用衣橱基础款、计划购入平价单品（预算300元内）]\n*   **特殊需求**：[例如：需要方便穿脱以适应温差、需要考虑孕期着装]\n\
+            \n请基于这些信息，为我提供1-2套具体的穿搭方案，要求必须给出不同性别的穿衣提示，比如方案1适合男性穿搭，方案2适合女性穿搭。请确保回答简洁明了，让用户能够轻松识别出自己应该如何穿搭出门。"
+        selected: false
+        title: LLM
+        type: llm
+        vision:
+          enabled: false
+      height: 87
+      id: llm
+      position:
+        x: 415
+        y: 263
+      positionAbsolute:
+        x: 415
+        y: 263
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        answer: '{{#llm.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 102
+      id: answer
+      position:
+        x: 748
+        y: 254
+      positionAbsolute:
+        x: 748
+        y: 254
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: -267
+      y: 137.5
+      zoom: 1
+  rag_pipeline_variables: []
