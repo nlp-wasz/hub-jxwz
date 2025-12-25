@@ -3,7 +3,7 @@ import openai
 import os
 from openai import OpenAI
 
-os.environ["OPENAI_API_KEY"] = "sk-89486caee02a40978cba7dea3a834978"
+os.environ["OPENAI_API_KEY"] = "sk-XXXXXXXX"
 
 # 读取数据
 ratings = pd.read_csv("./M_ML-100K/ratings.dat", sep="::", header=None, engine='python')
@@ -16,11 +16,11 @@ PROMPT_TEMPLATE = """
 你是一个电影推荐专家，请根据用户观看电影的偏好，给用户推荐可能喜欢的电影。
 如下是历史观看的电影:
 {0}
-请基于上述电影进行推荐，推荐10个待选的电影描述（包括电影类型和特点），每一行是一个推荐，格式如下：
+请基于上述电影进行推荐，推荐10个待选的电影描述，每一行是一个推荐，格式如下：
 电影名称 - 类型 - 简短描述(描述不超过100字)
 """
 
-def get_user_watched_movies(user_id, top_n=100):
+def get_user_watched_movies(user_id, top_n=10):
     """获取用户观看过的电影"""
     user_ratings = ratings[ratings['user_id'] == user_id].sort_values('rating', ascending=False).head(top_n)
     watched_movie_ids = user_ratings['movie_id'].tolist()
@@ -81,14 +81,11 @@ def search_movies_in_database(llm_recommendations, watched_movie_ids):
     return pd.DataFrame(recommended_movies).drop_duplicates()
 
 def recommend_movies_for_user(user_id):
-    """为用户推荐电影的完整流程"""
-    print(f"\n{'='*60}")
-    print(f"为用户 {user_id} 推荐电影")
-    print(f"{'='*60}\n")
+    """为用户推荐电影的流程"""
 
     # 1. 获取用户观看过的电影
     watched_movies, watched_movie_ids = get_user_watched_movies(user_id, top_n=10)
-    print("用户历史观看的电影（评分最高的10部）：")
+    print("用户历史观看的电影（10部）：")
     for idx, row in watched_movies.iterrows():
         print(f"  - {row['movie_title']} ({row['movie_tag']})")
 
@@ -109,9 +106,7 @@ def recommend_movies_for_user(user_id):
     recommended_movies = search_movies_in_database(llm_recommendations, watched_movie_ids)
 
     # 5. 输出最终推荐结果
-    print(f"\n{'='*60}")
-    print("最终推荐结果（从数据库中匹配的电影）：")
-    print(f"{'='*60}")
+    print("最终推荐结果：")
     if len(recommended_movies) > 0:
         for idx, row in recommended_movies.iterrows():
             print(f"  {row['movie_id']}. {row['movie_title']} - {row['movie_tag']}")
@@ -122,6 +117,4 @@ def recommend_movies_for_user(user_id):
 
 # 主程序
 if __name__ == "__main__":
-    # 选择一个用户进行推荐（可以修改user_id）
-    user_id = 196
-    recommended_movies = recommend_movies_for_user(user_id)
+    recommended_movies = recommend_movies_for_user(196)
