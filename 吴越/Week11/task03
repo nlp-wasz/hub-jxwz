@@ -1,0 +1,39 @@
+
+【作业3】对多模态RAG的项目，milvus如果要存储文本、图、表，数据结构如何设计？
+
+将文本、图、表分别存储到3个向量数据库中
+
+文本数据库设计：
+{
+    schema_text.add_field(field_name='document_id',datatype=DataType.INT64) #文档ID
+    schema_text.add_field(field_name='knowledge_id',datatype=DataType.INT64) #知识库ID
+    schema_text.add_field(field_name='file_path',datatype=DataType.VARCHAR,max_length=512) #文件存储地址
+    schema_text.add_field(field_name='chunk_id',datatype=DataType.INT64,is_primary=True) #chunk的id
+    schema_text.add_field(field_name='chunk_embedding',datatype=DataType.FLOAT_VECTOR,dim=512) #chunk编码结果
+    schema_text.add_field(field_name='chunk_content',datatype=DataType.VARCHAR,max_length=8192) #chunk的文字内容
+    schema_text.add_field(field_name='page_number',datatype=DataType.INT16) #chunk所在的页码
+}
+
+图像数据库设计：
+{
+    schema_image.add_field(field_name='document_id', datatype=DataType.INT64)  # 文档ID
+    schema_image.add_field(field_name='knowledge_id', datatype=DataType.INT64)  # 知识库ID
+    schema_image.add_field(field_name='file_path', datatype=DataType.VARCHAR, max_length=512)  # 文件存储地址
+    schema_image.add_field(field_name='image_id', datatype=DataType.INT64, is_primary=True)  # 图片的id
+    schema_image.add_field(field_name='image_embedding', datatype=DataType.FLOAT_VECTOR, dim=512)  # 图片编码结果
+    schema_image.add_field(field_name='image_file_path', datatype=DataType.VARCHAR, max_length=8192)  # 图片存储地址
+    schema_image.add_field(field_name='page_number', datatype=DataType.INT16)  # 图片所在的页码
+
+}
+
+
+表数据库设计：
+{
+    schema_image.add_field(field_name='document_id', datatype=DataType.INT64)  # 文档ID
+    schema_image.add_field(field_name='knowledge_id', datatype=DataType.INT64)  # 知识库ID
+    schema_image.add_field(field_name='file_path', datatype=DataType.VARCHAR, max_length=512)  # 文件存储地址
+    schema_image.add_field(field_name='table_id', datatype=DataType.INT64, is_primary=True)  # 图片的id
+    schema_image.add_field(field_name='table_embedding', datatype=DataType.FLOAT_VECTOR, dim=512)  # 表编码结果
+    schema_image.add_field(field_name='page_number', datatype=DataType.INT16)  # 表所在的页码
+
+}

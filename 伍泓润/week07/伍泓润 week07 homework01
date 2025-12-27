@@ -1,0 +1,49 @@
+可视化分析
+原始网络图：显示三个圈子的结构
+PCA降维图：将64维嵌入投影到2D空间
+相似度热力图：显示节点间的余弦相似度
+运行结果分析
+1、网络统计信息：
+Created graph with 45 nodes and 180-220 edges (随机)
+Generated 450 random walks (45节点 × 10条游走)
+2、三个可视化子图：
+左图：原始网络，三个圈子颜色不同，圈子内部连接紧密
+中图：PCA降维后的节点嵌入，同圈子节点在向量空间中聚集
+右图：相似度热力图，对角线最亮（自相似），同圈子节点相似度高
+最相似节点对：
+Top 5 most similar node pairs:
+Researcher_0 - Researcher_1: 0.95xx
+Artist_3 - Artist_5: 0.94xx
+Athlete_2 - Athlete_4: 0.93xx
+...
+DeepWalk 与 Wode2vec 的关系
+核心关系：算法迁移
+方面	   Word2Vec	     DeepWalk
+应用领域	自然语言处理	 图表示学习
+输入数据	文本句子	     随机游走序列
+基本单元	单词	         节点
+目标	   学习单词嵌入	  学习节点嵌入
+
+1、序列类比：
+Word2Vec:  "the cat sat on the mat" → 单词序列
+DeepWalk:  "Researcher_1 → Researcher_3 → Artist_5" → 节点序列
+2、Skip-gram模型共享：
+两者都使用相同的神经网络架构
+目标都是：给定中心词/节点，预测上下文词/节点
+3、关键创新：
+DeepWalk的创新在于将图结构数据转化为序列数据，从而能够借用成熟的NLP技术。
+数学等价性：
+# Word2Vec 的输入
+sentences = [
+    ["I", "love", "deep", "learning"],
+    ["graph", "embeddings", "are", "cool"]
+]
+
+# DeepWalk 的输入  
+walks = [
+    ["Researcher_1", "Researcher_3", "Artist_5"],
+    ["Athlete_2", "Athlete_4", "Researcher_10"]
+]
+DeepWalk = 随机游走 + Word2Vec
+随机游走：将图结构转化为节点序列，捕获局部邻域信息
+Word2Vec：将节点序列当作文本处理，学习有意义的向量表示

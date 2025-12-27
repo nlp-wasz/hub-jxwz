@@ -1,0 +1,196 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: advanced-chat
+  name: 穿衣智能指南-cf
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.26@4f1c4ded3d189719b7dd54e9d4e5b26f724f3632f3dfaa299491b42accc112c8
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: true
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        isInLoop: false
+        sourceType: llm
+        targetType: answer
+      id: 1761143678915-source-answer-target
+      source: '1761143678915'
+      sourceHandle: source
+      target: answer
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: llm
+      id: 1761142793799-source-1761143678915-target
+      source: '1761142793799'
+      sourceHandle: source
+      target: '1761143678915'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        selected: false
+        title: 开始
+        type: start
+        variables:
+        - default: ''
+          hint: ''
+          label: 天气
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: weather
+        - default: ''
+          hint: ''
+          label: 温度
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: temperature
+        - default: ''
+          hint: ''
+          label: 湿度
+          max_length: 48
+          options: []
+          placeholder: ''
+          required: true
+          type: text-input
+          variable: humidity
+      height: 140
+      id: '1761142793799'
+      position:
+        x: -188.79541506930624
+        y: 604.7842377541668
+      positionAbsolute:
+        x: -188.79541506930624
+        y: 604.7842377541668
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        answer: '{{#1761143678915.text#}}'
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 103
+      id: answer
+      position:
+        x: 378.6512500188758
+        y: 638.0964900490808
+      positionAbsolute:
+        x: 378.6512500188758
+        y: 638.0964900490808
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: qwen3-14b
+          provider: langgenius/tongyi/tongyi
+        prompt_template:
+        - id: 8166b537-b3c1-4efd-b2bf-d8b05cc9997c
+          role: system
+          text: '你是一个穿搭专家，结合天气{{#1761142793799.weather#}}、温度{{#1761142793799.temperature#}}、湿度{{#1761142793799.humidity#}}，给出穿搭建议，按照以下格式输出，不需要输出其他内容：
+
+            天气：{{#1761142793799.weather#}}
+
+            温度：{{#1761142793799.temperature#}}
+
+            湿度：{{#1761142793799.humidity#}}
+
+            结合上述天气信息，我给出的穿搭建议是：'
+        selected: false
+        title: LLM 2
+        type: llm
+        vision:
+          enabled: false
+      height: 88
+      id: '1761143678915'
+      position:
+        x: 93.58432863383723
+        y: 638.0964900490808
+      positionAbsolute:
+        x: 93.58432863383723
+        y: 638.0964900490808
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 242
+    viewport:
+      x: 239.5283228444551
+      y: -304.8286128592574
+      zoom: 0.8705505632961243
+  rag_pipeline_variables: []

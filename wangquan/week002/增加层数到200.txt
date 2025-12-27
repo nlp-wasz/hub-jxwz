@@ -1,0 +1,95 @@
+"D:\Program Files\Anaconda\envs\py312\python.exe" E:\AI\learn_code\Week02\09_深度学习文本分类.py 
+Batch 个数 0, 当前Batch Loss: 2.4893600940704346
+Batch 个数 50, 当前Batch Loss: 0.3285024166107178
+Batch 个数 100, 当前Batch Loss: 0.12832161784172058
+Batch 个数 150, 当前Batch Loss: 0.1894943118095398
+Batch 个数 200, 当前Batch Loss: 0.3994358479976654
+Batch 个数 250, 当前Batch Loss: 0.29785865545272827
+Batch 个数 300, 当前Batch Loss: 0.05000913143157959
+Batch 个数 350, 当前Batch Loss: 0.055539608001708984
+Epoch [1/10], Loss: 0.4160
+Batch 个数 0, 当前Batch Loss: 0.08627428114414215
+Batch 个数 50, 当前Batch Loss: 0.06665559858083725
+Batch 个数 100, 当前Batch Loss: 0.08778295665979385
+Batch 个数 150, 当前Batch Loss: 0.010886522009968758
+Batch 个数 200, 当前Batch Loss: 0.13336795568466187
+Batch 个数 250, 当前Batch Loss: 0.18558454513549805
+Batch 个数 300, 当前Batch Loss: 0.0741940289735794
+Batch 个数 350, 当前Batch Loss: 0.04003563150763512
+Epoch [2/10], Loss: 0.1063
+Batch 个数 0, 当前Batch Loss: 0.007589622400701046
+Batch 个数 50, 当前Batch Loss: 0.015098619274795055
+Batch 个数 100, 当前Batch Loss: 0.19678142666816711
+Batch 个数 150, 当前Batch Loss: 0.0010896737221628428
+Batch 个数 200, 当前Batch Loss: 0.010860086418688297
+Batch 个数 250, 当前Batch Loss: 0.012493256479501724
+Batch 个数 300, 当前Batch Loss: 0.004602629225701094
+Batch 个数 350, 当前Batch Loss: 0.017173750326037407
+Epoch [3/10], Loss: 0.0420
+Batch 个数 0, 当前Batch Loss: 0.0005595354014076293
+Batch 个数 50, 当前Batch Loss: 0.00414683623239398
+Batch 个数 100, 当前Batch Loss: 0.0027885884046554565
+Batch 个数 150, 当前Batch Loss: 0.0012261150404810905
+Batch 个数 200, 当前Batch Loss: 0.0003353621286805719
+Batch 个数 250, 当前Batch Loss: 0.015974432229995728
+Batch 个数 300, 当前Batch Loss: 0.02213769033551216
+Batch 个数 350, 当前Batch Loss: 0.0015806916635483503
+Epoch [4/10], Loss: 0.0258
+Batch 个数 0, 当前Batch Loss: 0.0015703123062849045
+Batch 个数 50, 当前Batch Loss: 0.00025143998209387064
+Batch 个数 100, 当前Batch Loss: 0.016217956319451332
+Batch 个数 150, 当前Batch Loss: 0.0008707616943866014
+Batch 个数 200, 当前Batch Loss: 0.0010644318535923958
+Batch 个数 250, 当前Batch Loss: 0.0014635876286774874
+Batch 个数 300, 当前Batch Loss: 0.0004294071113690734
+Batch 个数 350, 当前Batch Loss: 0.000928684079553932
+Epoch [5/10], Loss: 0.0223
+Batch 个数 0, 当前Batch Loss: 0.016485583037137985
+Batch 个数 50, 当前Batch Loss: 0.0005576913827098906
+Batch 个数 100, 当前Batch Loss: 0.005393454805016518
+Batch 个数 150, 当前Batch Loss: 0.026354480534791946
+Batch 个数 200, 当前Batch Loss: 0.0009115542052313685
+Batch 个数 250, 当前Batch Loss: 0.0005069184699095786
+Batch 个数 300, 当前Batch Loss: 0.00982713047415018
+Batch 个数 350, 当前Batch Loss: 5.726002200390212e-05
+Epoch [6/10], Loss: 0.0114
+Batch 个数 0, 当前Batch Loss: 0.00041040871292352676
+Batch 个数 50, 当前Batch Loss: 0.0007930324063636363
+Batch 个数 100, 当前Batch Loss: 0.017469622194767
+Batch 个数 150, 当前Batch Loss: 0.0007046579848974943
+Batch 个数 200, 当前Batch Loss: 0.0001811122929211706
+Batch 个数 250, 当前Batch Loss: 0.00533035583794117
+Batch 个数 300, 当前Batch Loss: 0.030379166826605797
+Batch 个数 350, 当前Batch Loss: 0.0001251883222721517
+Epoch [7/10], Loss: 0.0280
+Batch 个数 0, 当前Batch Loss: 0.011185893788933754
+Batch 个数 50, 当前Batch Loss: 0.0005653675179928541
+Batch 个数 100, 当前Batch Loss: 7.374209235422313e-05
+Batch 个数 150, 当前Batch Loss: 0.0013492972357198596
+Batch 个数 200, 当前Batch Loss: 0.002157951705157757
+Batch 个数 250, 当前Batch Loss: 0.028829066082835197
+Batch 个数 300, 当前Batch Loss: 0.0001312503736699
+Batch 个数 350, 当前Batch Loss: 0.0001714069803711027
+Epoch [8/10], Loss: 0.0283
+Batch 个数 0, 当前Batch Loss: 0.0001451315765734762
+Batch 个数 50, 当前Batch Loss: 0.07826008647680283
+Batch 个数 100, 当前Batch Loss: 0.0012443938758224249
+Batch 个数 150, 当前Batch Loss: 1.6238551324931905e-05
+Batch 个数 200, 当前Batch Loss: 0.018557246774435043
+Batch 个数 250, 当前Batch Loss: 0.00018286371778231114
+Batch 个数 300, 当前Batch Loss: 0.046551723033189774
+Batch 个数 350, 当前Batch Loss: 0.14562731981277466
+Epoch [9/10], Loss: 0.0251
+Batch 个数 0, 当前Batch Loss: 0.0006119990721344948
+Batch 个数 50, 当前Batch Loss: 0.00016802038589958102
+Batch 个数 100, 当前Batch Loss: 1.1399258710298454e-06
+Batch 个数 150, 当前Batch Loss: 9.999079338740557e-05
+Batch 个数 200, 当前Batch Loss: 8.42227746034041e-06
+Batch 个数 250, 当前Batch Loss: 0.38736629486083984
+Batch 个数 300, 当前Batch Loss: 0.0016771090449765325
+Batch 个数 350, 当前Batch Loss: 0.001426572329364717
+Epoch [10/10], Loss: 0.0420
+输入 '帮我导航到北京' 预测为: 'Travel-Query'
+输入 '查询明天北京的天气' 预测为: 'Weather-Query'
+
+Process finished with exit code 0

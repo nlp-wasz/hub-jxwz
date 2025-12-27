@@ -1,0 +1,283 @@
+app:
+  description: 知识库+聊天机器人
+  icon: 📑
+  icon_background: '#E0F2FE'
+  mode: advanced-chat
+  name: dify知识问答
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/deepseek:0.0.6@dd589dc093c8084925858034ab5ec1fdf0d33819f43226c2f8c4a749a9acbbb2
+    version: null
+kind: app
+version: 0.4.0
+workflow:
+  conversation_variables: []
+  environment_variables: []
+  features:
+    file_upload:
+      allowed_file_extensions:
+      - .JPG
+      - .JPEG
+      - .PNG
+      - .GIF
+      - .WEBP
+      - .SVG
+      allowed_file_types:
+      - image
+      allowed_file_upload_methods:
+      - local_file
+      - remote_url
+      enabled: false
+      fileUploadConfig:
+        audio_file_size_limit: 50
+        batch_count_limit: 5
+        file_size_limit: 15
+        image_file_size_limit: 10
+        video_file_size_limit: 100
+        workflow_file_upload_limit: 10
+      image:
+        enabled: false
+        number_limits: 3
+        transfer_methods:
+        - local_file
+        - remote_url
+      number_limits: 3
+    opening_statement: ''
+    retriever_resource:
+      enabled: false
+    sensitive_word_avoidance:
+      enabled: false
+    speech_to_text:
+      enabled: false
+    suggested_questions: []
+    suggested_questions_after_answer:
+      enabled: false
+    text_to_speech:
+      enabled: false
+      language: ''
+      voice: ''
+  graph:
+    edges:
+    - data:
+        isInIteration: false
+        sourceType: llm
+        targetType: parameter-extractor
+      id: 1711528917469-source-1719060889083-target
+      source: '1711528917469'
+      sourceHandle: source
+      target: '1719060889083'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInIteration: false
+        sourceType: parameter-extractor
+        targetType: answer
+      id: 1719060889083-source-1711528919501-target
+      source: '1719060889083'
+      sourceHandle: source
+      target: '1711528919501'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: start
+        targetType: knowledge-retrieval
+      id: 1711528914102-source-1761224739344-target
+      source: '1711528914102'
+      sourceHandle: source
+      target: '1761224739344'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    - data:
+        isInLoop: false
+        sourceType: knowledge-retrieval
+        targetType: llm
+      id: 1761224739344-source-1711528917469-target
+      source: '1761224739344'
+      sourceHandle: source
+      target: '1711528917469'
+      targetHandle: target
+      type: custom
+      zIndex: 0
+    nodes:
+    - data:
+        desc: ''
+        selected: false
+        title: 开始
+        type: start
+        variables: []
+      height: 51
+      id: '1711528914102'
+      position:
+        x: 29.306751575086537
+        y: 282
+      positionAbsolute:
+        x: 29.306751575086537
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        context:
+          enabled: false
+          variable_selector: []
+        desc: ''
+        memory:
+          query_prompt_template: '{{#sys.query#}}'
+          role_prefix:
+            assistant: ''
+            user: ''
+          window:
+            enabled: false
+            size: 50
+        model:
+          completion_params:
+            frequency_penalty: 0
+            max_tokens: 512
+            temperature: 0.7
+            top_p: 1
+          mode: chat
+          name: deepseek-chat
+          provider: langgenius/deepseek/deepseek
+        prompt_template:
+        - id: eb073a07-378a-439b-8f13-b0ce1605ce06
+          role: system
+          text: '你是一个乐于助人的助手。
+
+            使用以下内容作为你所学习的知识，放在<context></context> XML标签内。
+
+            <context>
+
+            {{#context#}}
+
+            </context>
+
+            回答用户时：
+
+            如果你不知道，就直说你不知道。如果你在不确定的时候不知道，就寻求澄清。
+
+            避免提及你是从上下文中获取的信息。
+
+            并根据用户问题的语言来回答。'
+        selected: false
+        title: LLM
+        type: llm
+        variables: []
+        vision:
+          enabled: false
+      height: 87
+      id: '1711528917469'
+      position:
+        x: 648
+        y: 282
+      positionAbsolute:
+        x: 648
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        answer: '{{#1719060889083.links#}}
+
+          {{#1719060889083.answer#}}'
+        desc: ''
+        selected: false
+        title: 直接回复
+        type: answer
+        variables: []
+      height: 121
+      id: '1711528919501'
+      position:
+        x: 1230.9747327621114
+        y: 282
+      positionAbsolute:
+        x: 1230.9747327621114
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        desc: ''
+        instruction: 提取自然语言回答填入answer，并从中提取至多前十个网页url或超链接，填入链接列表links
+        model:
+          completion_params:
+            temperature: 0.7
+          mode: chat
+          name: deepseek-chat
+          provider: langgenius/deepseek/deepseek
+        parameters:
+        - description: 自然语言回答
+          name: answer
+          required: true
+          type: string
+        - description: 链接列表
+          name: links
+          required: false
+          type: array[string]
+        query:
+        - '1711528917469'
+        - text
+        reasoning_mode: prompt
+        selected: false
+        title: 参数提取器
+        type: parameter-extractor
+        variables: []
+        vision:
+          enabled: false
+      height: 87
+      id: '1719060889083'
+      position:
+        x: 952
+        y: 282
+      positionAbsolute:
+        x: 952
+        y: 282
+      selected: false
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    - data:
+        dataset_ids:
+        - jb9aeH+j/bnLVUFMbzTmOgToJhcXXocIqaUirCEtsUxgp0hRKCgSQl8ZCf2Vj9gX
+        multiple_retrieval_config:
+          reranking_enable: false
+          reranking_mode: reranking_model
+          top_k: 4
+        query_variable_selector:
+        - '1711528914102'
+        - sys.query
+        retrieval_mode: multiple
+        selected: false
+        title: 知识检索 2
+        type: knowledge-retrieval
+      height: 89
+      id: '1761224739344'
+      position:
+        x: 335.5901871479442
+        y: 282
+      positionAbsolute:
+        x: 335.5901871479442
+        y: 282
+      selected: true
+      sourcePosition: right
+      targetPosition: left
+      type: custom
+      width: 241
+    viewport:
+      x: 6.697953642853918
+      y: 126.58134500516445
+      zoom: 0.4876777307638211
+  rag_pipeline_variables: []

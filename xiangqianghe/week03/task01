@@ -1,0 +1,287 @@
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+
+# 构建数据集
+dataset = pd.read_csv("/BaiduNetdiskDownload/badou/my_project/dataset.csv", sep="\t", header=None)
+texts = dataset[0].tolist()
+string_labels = dataset[1].tolist()
+
+# 对所有标签使用列表推导式进行去重，并添加对应的索引
+label_to_index = {label: i for i, label in enumerate(set(string_labels))}
+# 这行代码使用上面创建的映射字典，将原始字符串标签列表转换为数值标签列表：
+numerical_labels = [label_to_index[label] for label in string_labels]
+
+# 通过遍历，将所有文本字符串转换为索引，
+# 初始化字符到索引的映射字典
+# 添加一个特殊的填充标记<pad>，并分配索引0
+# 填充标记用于将不同长度的文本序列统一到相同长度
+# 1.初始：char_to_index = {'<pad>': 0}
+# 2.处理"你好"：
+# '你'不在字典中 → 添加：char_to_index = {'<pad>': 0, '你': 1}
+# '好'不在字典中 → 添加：char_to_index = {'<pad>': 0, '你': 1, '好': 2}
+char_to_index = {'<pad>': 0}
+for text in texts:
+    for char in text:
+        if char not in char_to_index:
+            char_to_index[char] = len(char_to_index) #使用当前字典长度作为新字符的索引值（这是一种常见的自增ID分配方式），这样可以确保每个字符都有唯一的索引值
+
+index_to_char = {i: char for char, i in char_to_index.items()}  #用字典推导式，将char_to_index中的键值对反转
+vocab_size = len(char_to_index) #计算词汇表的大小（包含所有唯一字符加上特殊标记），这个值将用于定义嵌入层(Embedding Layer)的输入维度
+
+max_len = 40
+
+class CharGRUDataset(Dataset):
+    def __init__(self, texts, labels, char_to_index, max_len):
+        self.texts = texts
+        self.labels = torch.tensor(labels, dtype=torch.long)
+        self.char_to_index = char_to_index
+        self.max_len = max_len
+
+    def __len__(self):
+        return len(self.texts)  #原始列表总长度，数据集中样本的总数
+
+    # idx参数的存在使得：
+    #
+    # 1.
+    # ​​按需访问​​：不需要一次性加载所有数据到内存，可以按索引逐样本处理
+    #
+    # 2.
+    # ​​随机访问​​：支持随机打乱顺序，提高训练效果
+    #
+    # 3.
+    # ​​并行处理​​：DataLoader
+    # 可以使用多进程同时处理多个索引
+    #
+    # 4.
+    # ​​灵活性​​：可以轻松实现各种采样策略（如加权采样）
+    def __getitem__(self, idx): #将文本转换为索引序列，get(char, 0) 表示: 如果字符在字典中，返回对应索引；否则返回0（即<pad>的索引）
+        text = self.texts[idx]  #获取第idx个文本
+        #   self.char_to_index.get(char, 0)它会在字典里查找这个 char。
+        #   如果找到了：返回该字符对应的数字索引。例如，char_to_index['你']可能返回 1。
+        #   如果没找到（即这是一个训练时没见过的生僻字或特殊符号）：则返回默认值 0。这里的 0就是我们之前预留给 <pad>（填充符）的索引
+        # 这种方法能优雅地处理训练集中从未出现过的字符（称为OOV, Out-Of-Vocabulary），防止程序因找不到键而崩溃。
+        indices = [self.char_to_index.get(char, 0) for char in text[:self.max_len]] #转换为了索引序列
+        indices += [0] * (self.max_len - len(indices))#如果文本长度小于max_len，用0（填充标记）补齐
+        #dtype=torch.long指定数据类型为整数（long integer），这是因为索引必须是整数，才能被嵌入层（Embedding Layer）正确查找
+        return torch.tensor(indices, dtype=torch.long), self.labels[idx]#返回处理后的序列和对应的标签
+
+    # 这里，labels是一个已经​​转换为数值形式​​的标签列表。例如：
+    # •
+    # 原始字符串标签可能是：["导航", "天气", "导航", "音乐"]
+    # •
+    # 经过标签编码后变为：[0, 1, 0, 2]（数值形式）
+    # •
+    # 然后被转换为
+    # PyTorch
+    # 张量：tensor([0, 1, 0, 2])
+    # 2.
+    # self.labels[idx]的作用当调用self.labels[idx] 时：
+    # 1.
+    # 索引操作：从标签张量中获取第idx个元素
+    # 2.
+    # 返回值：返回的是一个标签值（数值），而不是索引
+
+# --- NEW GRU Model Class ---
+# 这个类继承自 PyTorch 的 nn.Module基类，是构建深度学习模型的标准方式。
+# class GRUClassifier(nn.Module):
+    # def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim):
+    #     super(GRUClassifier, self).__init__()
+    #     #作用：将离散的字符索引转换为连续的密集向量表示
+    #     self.embedding = nn.Embedding(vocab_size, embedding_dim)
+    #     #作用：处理序列数据，捕捉文本中的时序依赖关系
+    #     #batch_first=True: 使输入输出张量的形状为 (batch_size, seq_len, features)，
+    #     # 而不是默认的 (seq_len, batch_size, features)
+    #     self.gru = nn.GRU(embedding_dim, hidden_dim, batch_first=True)
+    #     #将 LSTM 的输出映射到类别空间
+    #     #
+    #     self.fc = nn.Linear(hidden_dim, output_dim)
+    #
+    # def forward(self, x):
+    #     #输入 x的形状：(batch_size, seq_len)
+    #     #这是字符索引序列，来自 CharLSTMDataset的处理结果
+    #     embedded = self.embedding(x)
+    #     #gru_out: 所有时间步的输出，形状为 (batch_size, seq_len, hidden_dim)
+    #     #hidden_state: 最后一个时间步的隐藏状态，形状为 (num_layers, batch_size, hidden_dim)
+    #     #这里使用的是单层 LSTM，所以 num_layers=1
+    #     #cell_state: 最后一个时间步的细胞状态（本模型中没有直接使用）
+    #     #GRU 只返回隐藏状态，没有细胞状态
+    #     gru_out, hidden_state = self.gru(embedded)
+    #     # hidden_state.squeeze(0): 移除第一维（层数维度），形状从 (1, batch_size, hidden_dim)变为 (batch_size, hidden_dim)
+    #     #全连接层将隐藏状态映射到类别空间，输出形状为 (batch_size, output_dim)
+    #     out = self.fc(hidden_state.squeeze(0))
+    #     return out
+
+
+class GRUAttentionClassifier(nn.Module):
+    def __init__(self, vocab_size, embedding_dim, hidden_dim, output_dim):
+        super(GRUAttentionClassifier, self).__init__()
+        self.embedding = nn.Embedding(vocab_size, embedding_dim)
+        #bidirectional=True: 使用双向 GRU，同时考虑前向和后向序列信息
+        self.gru = nn.GRU(embedding_dim, hidden_dim, batch_first=True, bidirectional=True)
+        #在 GRU 后添加注意力层
+        self.attention = nn.Linear(hidden_dim * 2, 1)
+        #双向 GRU，
+        self.fc = nn.Linear(hidden_dim * 2, output_dim)
+
+    def forward(self, x):
+        embedded = self.embedding(x)
+        gru_out, _ = self.gru(embedded)  # gru_out: (batch, seq_len, hidden*2)
+
+        # 注意力机制
+        attn_weights = torch.softmax(self.attention(gru_out).squeeze(2), dim=1)
+        context = torch.sum(attn_weights.unsqueeze(2) * gru_out, dim=1)
+
+        out = self.fc(context)
+        return out
+# --- Training and Prediction ---
+#exts​​: 原始文本列表，每个元素是一个字符串（如 ["导航到北京", "查询天气", ...]）
+#numerical_labels​​: 数值形式的标签列表（如 [0, 1, 0, 2, ...]）
+#​​char_to_index​​: 字符到索引的映射字典（如 {'<pad>': 0, '你': 1, '好': 2, ...}）
+#​​max_len​​: 序列的最大长度（如 40）
+gru_dataset = CharGRUDataset(texts, numerical_labels, char_to_index, max_len)
+
+#这行代码创建了一个 DataLoader实例，它是 PyTorch 中用于批量加载数据的工具
+#batch_size=32​​: 每个批次包含32个样本
+#shuffle=True​​: 在每个epoch开始时打乱数据顺序
+# 可选参数（这里未使用但很重要）：
+# •
+# num_workers: 使用多少个子进程加载数据（加速数据加载）
+#
+# •
+# pin_memory: 是否将数据复制到CUDA固定内存（加速GPU传输）
+#
+# •
+# drop_last: 是否丢弃最后一个不完整的批次
+dataloader = DataLoader(gru_dataset, batch_size=32, shuffle=True)
+
+embedding_dim = 64
+hidden_dim = 128
+#label_to_index​​：这是一个字典，将字符串标签映射到数值索引
+#len(label_to_index)​​：计算字典中键值对的数量，即不同类别的总数
+#​​output_dim​​：将这个数量赋值给输出维度变量
+output_dim = len(label_to_index)
+
+model = GRUAttentionClassifier(vocab_size, embedding_dim, hidden_dim, output_dim)
+#这行代码定义了交叉熵损失函数，这是多分类任务中最常用的损失函数。
+criterion = nn.CrossEntropyLoss()
+#这行代码配置了Adam优化器，用于更新模型的参数。
+#​​model.parameters()​​：获取模型中所有需要学习的参数
+optimizer = optim.Adam(model.parameters(), lr=0.001)
+
+#训练迭代的轮数，整个数据集将被完整地遍历和学习4次
+num_epochs = 4
+for epoch in range(num_epochs):
+    model.train()
+    running_loss = 0.0
+    #​​功能​​：遍历数据加载器中的每个批次
+    #inputs​​：批处理后的文本序列，形状为(batch_size, max_len)
+    #​​labels​​：对应的标签，形状为(batch_size,)
+    #​​idx​​：当前批次的索引（从0开始）
+    for idx, (inputs, labels) in enumerate(dataloader):
+        optimizer.zero_grad()
+        #将输入数据通过神经网络，计算预测输出
+        outputs = model(inputs)
+        #计算模型预测与真实标签之间的差异
+        loss = criterion(outputs, labels)
+        #自动计算损失相对于模型所有参数的梯度
+        loss.backward()
+        #根据计算出的梯度更新模型参数
+        optimizer.step()
+        #将当前批次的损失值添加到累计损失中
+        #​​loss.item()​​：从PyTorch张量中提取Python数值（标量）
+        running_loss += loss.item()
+        #每50个批次打印一次训练进度
+        if idx % 50 == 0:
+            print(f"Batch 个数 {idx}, 当前Batch Loss: {loss.item()}")
+
+    print(f"Epoch [{epoch + 1}/{num_epochs}], GRU_Loss: {running_loss / len(dataloader):.4f}")
+
+#这个函数用于使用训练好的LSTM模型对新文本进行分类预测。
+def classify_text_gru(text, model, char_to_index, max_len, index_to_label):
+    indices = [char_to_index.get(char, 0) for char in text[:max_len]]
+    indices += [0] * (max_len - len(indices))
+    #unsqueeze(0): 添加批次维度，从形状(max_len,)变为(1, max_len)
+    input_tensor = torch.tensor(indices, dtype=torch.long).unsqueeze(0)
+
+#model.eval()​​: 将模型设置为评估模式
+    #禁用Dropout等训练特有的层
+    model.eval()
+    #禁用梯度计算，大幅减少内存使用，加速预测过程（不需要计算梯度）
+    with torch.no_grad():
+        output = model(input_tensor)
+
+#​​torch.max(output, 1)​​: 在输出中找到最大值及其索引
+    _, predicted_index = torch.max(output, 1)
+    #​​predicted_index.item()​​: 从张量中提取Python数值
+    predicted_index = predicted_index.item()
+    #​​index_to_label[predicted_index]​​: 将数值索引转换回原始标签字符串
+    predicted_label = index_to_label[predicted_index]
+
+# #1.
+# 字符转索引: ['北', '京', '天', '气']→ [10, 11, 12, 13]
+#
+# 2.
+# 填充到max_len=40: [10, 11, 12, 13, 0, 0, ..., 0]
+#
+# 3.
+# 模型输出: tensor([[2.1, -0.5, 3.2]])(假设3个类别)
+#
+# 4.
+# torch.max取最大值索引: 2(因为3.2最大)
+#
+# 5.
+# 通过index_to_label转换: 2→ "天气"
+    return predicted_label
+
+#这行代码创建了一个从数值索引到原始字符串标签的反向映射字典。
+# ​​label_to_index​​: 原本是{'导航': 0, '天气': 1, '音乐': 2}
+#
+# •
+# ​​字典推导式​​: {i: label for label, i in label_to_index.items()}
+#
+# •
+# 遍历label_to_index的每个键值对(label, i)
+#
+# •
+# 创建新的键值对(i, label)
+#
+# •
+# ​​结果​​: {0: '导航', 1: '天气', 2: '音乐'}
+index_to_label = {i: label for label, i in label_to_index.items()}
+
+new_text = "帮我导航到北京"
+predicted_class = classify_text_gru(new_text, model, char_to_index, max_len, index_to_label)
+print(f"输入 '{new_text}' 预测为: '{predicted_class}'")
+
+new_text_2 = "查询明天北京的天气"
+predicted_class_2 = classify_text_gru(new_text_2, model, char_to_index, max_len, index_to_label)
+print(f"输入 '{new_text_2}' 预测为: '{predicted_class_2}'")
+
+new_text = "我想去成都，听音乐会"
+predicted_class = classify_text_gru(new_text, model, char_to_index, max_len, index_to_label)
+print(f"输入 '{new_text}' 预测为: '{predicted_class}'")
+
+new_text = "我想听歌"
+predicted_class = classify_text_gru(new_text, model, char_to_index, max_len, index_to_label)
+print(f"输入 '{new_text}' 预测为: '{predicted_class}'")
+
+new_text_2 = "我要到昆明市去旅游"
+predicted_class_2 = classify_text_gru(new_text_2, model, char_to_index, max_len, index_to_label)
+print(f"输入 '{new_text_2}' 预测为: '{predicted_class_2}'")
+
+new_text = "我想看XXX的电影"
+predicted_class = classify_text_gru(new_text, model, char_to_index, max_len, index_to_label)
+print(f"输入 '{new_text}' 预测为: '{predicted_class}'")
+
+
+#预测结果
+#Epoch [4/4], GRU_Loss: 0.1440
+#输入 '帮我导航到北京' 预测为: 'Travel-Query'
+#输入 '查询明天北京的天气' 预测为: 'Weather-Query'
+#输入 '我想去成都，听音乐会' 预测为: 'Other'
+#输入 '我想听歌' 预测为: 'Music-Play'
+#输入 '我要到昆明市去旅游' 预测为: 'Travel-Query'
+#输入 '我想看XXX的电影' 预测为: 'FilmTele-Play'

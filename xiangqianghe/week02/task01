@@ -1,0 +1,206 @@
+import pandas as pd
+import torch
+import torch.nn as nn
+import torch.optim as optim
+from torch.utils.data import Dataset, DataLoader
+
+# ... (Data loading and preprocessing remains the same) ...
+# .tolist()方法：
+# •将NumPy数组、PyTorch张量等数据结构转换为Python原生列表
+# •作用：
+# •去除数据的特殊格式（如Tensor的梯度跟踪）
+# •便于Python标准库处理
+# •减少内存开销（某些情况下）
+dataset = pd.read_csv("./dataset.csv", sep="\t", header=None)
+texts = dataset[0].tolist()
+string_labels = dataset[1].tolist()
+# print(texts[:3])
+# print(string_labels[:3])
+
+# 创建标签到数字的映射
+label_to_index = {label: i for i, label in enumerate(set(string_labels))}
+# 将原始字符串标签列表转换为数值列表
+numerical_labels = [label_to_index[label] for label in string_labels]
+
+# 原始的文本构建一个词典,并统一序列长度,<pad>是序列处理中常用的填充符号
+# len(char_to_index)实现自动索引分配：
+# •初始状态：字典长度=1 (已有<pad>:0)
+# •首个字符赋值：len(char_to_index) = 1
+# •下次新增字符：len(char_to_index) = 2，依此类推
+# 假设 texts = ["你好", "Hello"]
+# 步骤1: 添加"你" -> {'<pad>':0, '你':1}
+# 步骤2: 添加"好" -> {'<pad>':0, '你':1, '好':2}
+# 步骤3: "H" -> {'<pad>':0, '你':1, '好':2, 'H':3}
+# 步骤4: "e" -> {... 'e':4}
+# 步骤5: "l" -> {... 'l':5}
+# 步骤6: "o" -> {... 'o':6}
+char_to_index = {'<pad>': 0}
+for text in texts:
+    for char in text:
+        if char not in char_to_index:   # 如果字符不在字典里里面,添加新字符进字典
+            char_to_index[char] = len(char_to_index)
+# print(char_to_index){'<pad>': 0, '还': 1, '有': 2, '双': 3, '鸭': 4, '山': 5, '到': 6, '淮': 7, '阴': 8, '的': 9
+
+# 创建反向映射和获取词汇表大小
+index_to_char = {i: char for char, i in char_to_index.items()}
+vocab_size = len(char_to_index)
+
+# 取文本的前40个字符
+# 定义所有文本序列的最大长度为40个字符
+max_len = 40
+
+
+class CharBoWDataset(Dataset):
+    def __init__(self, texts, labels, char_to_index, max_len, vocab_size):
+        self.texts = texts
+        self.labels = torch.tensor(labels, dtype=torch.long)
+        self.char_to_index = char_to_index
+        self.max_len = max_len
+        self.vocab_size = vocab_size
+        self.bow_vectors = self._create_bow_vectors()
+
+    # char_to_index.get(char, 0)：使用字典查找字符对应的索引值
+    # •如果字符不在字典中（未知字符），返回默认值0
+    def _create_bow_vectors(self):
+        tokenized_texts = []
+        for text in self.texts:
+            tokenized = [self.char_to_index.get(char, 0) for char in text[:self.max_len]]
+            tokenized += [0] * (self.max_len - len(tokenized))
+            tokenized_texts.append(tokenized)
+        # 将分词序列转换为词袋向量
+        # tokenized_texts：包含多个文本分词序列的列表（二维列表，如之前生成的tokenized_texts）
+        # •vocab_size：词汇表的大小（即字典中字符的数量）
+        bow_vectors = []
+        for text_indices in tokenized_texts:
+            bow_vector = torch.zeros(self.vocab_size)
+            for index in text_indices:
+                if index != 0:
+                    bow_vector[index] += 1
+            bow_vectors.append(bow_vector)
+        return torch.stack(bow_vectors)
+
+    def __len__(self):
+        return len(self.texts)
+
+    def __getitem__(self, idx):
+        return self.bow_vectors[idx], self.labels[idx]
+
+
+class SimpleClassifier(nn.Module):
+    def __init__(self, input_dim, hidden_dim1, hidden_dim2, hidden_dim3, output_dim): # 层的个数 和 验证集精度
+        # 层初始化,第一层
+        super(SimpleClassifier, self).__init__()
+        self.fc1 = nn.Linear(input_dim, hidden_dim1)
+        self.relu1 = nn.ReLU()
+        self.dropout1 = nn.Dropout(0.01)
+        # 第二层
+        self.fc2 = nn.Linear(hidden_dim1, hidden_dim2)
+        self.relu2 = nn.ReLU()
+        self.dropout2 = nn.Dropout(0.01)
+        # 第三层
+        self.fc3 = nn.Linear(hidden_dim2, hidden_dim3)
+        self.relu3 = nn.ReLU()
+        self.dropout3 = nn.Dropout(0.01)
+    #   第四层
+        self.fc_out = nn.Linear(hidden_dim3, output_dim)
+    def forward(self, x):
+        # 手动实现每层的计算
+        out = self.fc1(x)
+        out = self.relu1(out)
+        out = self.dropout1(out)  # 添加dropout
+
+        out = self.fc2(out)
+        out = self.relu2(out)
+        out = self.dropout2(out)  # 添加dropout
+
+        out = self.fc3(out)
+        out = self.relu3(out)
+        out = self.dropout3(out)  # 添加dropout
+
+        out = self.fc_out(out)
+        return out
+
+# 创建数据集实例
+char_dataset = CharBoWDataset(texts, numerical_labels, char_to_index, max_len, vocab_size) # 读取单个样本
+# 创建数据加载器
+# char_dataset,  # 数据集对象
+# batch_size = 32,  # 批次大小(每次处理32个样本)
+# shuffle = True  # 每个epoch随机打乱数据
+dataloader = DataLoader(char_dataset, batch_size=32, shuffle=True) # 读取批量数据集 -》 batch数据
+
+# 功能：初始化模型、损失函数和优化器
+# 参数：
+# •隐藏层维度：128
+# •输出维度：类别数量（示例中为3）
+# •损失函数：交叉熵（分类任务标准损失）
+# •优化器：随机梯度下降（学习率0.01）
+
+# 设置各层维度 - 可根据实际情况调整
+hidden_dim1 = 256 #Epoch [10/10], Loss: 0.5808
+hidden_dim2 = 128 #Epoch [10/10], Loss: 0.5817
+hidden_dim3 = 64 #Epoch [10/10], Loss: 0.5886
+output_dim = len(label_to_index)
+
+model = SimpleClassifier(vocab_size, hidden_dim1, hidden_dim2, hidden_dim3, output_dim) # 维度和精度有什么关系？
+criterion = nn.CrossEntropyLoss() # 损失函数 内部自带激活函数，softmax
+optimizer = optim.SGD(model.parameters(), lr=0.01)
+# optimizer = optim.Adam(model.parameters(), lr=0.01)
+
+# epoch： 将数据集整体迭代训练一次
+# batch： 数据集汇总为一批训练一次
+# num_epochs = 10 #Epoch [10/10], Loss: 1.4945
+# num_epochs = 20 #Epoch [20/20], Loss: 0.3459
+# num_epochs = 30 #Epoch [30/30], Loss: 0.2294
+# num_epochs = 40 #Epoch [40/40], Loss: 0.1410
+# num_epochs = 50 #Epoch [50/50], Loss: 0.0847
+num_epochs = 100 #Epoch [100/100], Loss: 0.0132
+for epoch in range(num_epochs): # 12000， batch size 100 -》 batch 个数： 12000 / 100
+    model.train()
+    running_loss = 0.0
+    for idx, (inputs, labels) in enumerate(dataloader):
+        optimizer.zero_grad()
+        outputs = model(inputs)
+        loss = criterion(outputs, labels)
+        loss.backward()
+        optimizer.step()
+        running_loss += loss.item()
+        if idx % 50 == 0:
+            print(f"Batch 个数 {idx}, 当前Batch Loss: {loss.item()}")
+
+
+    print(f"Epoch [{epoch + 1}/{num_epochs}], Loss: {running_loss / len(dataloader):.4f}")
+
+
+def classify_text(text, model, char_to_index, vocab_size, max_len, index_to_label):
+    tokenized = [char_to_index.get(char, 0) for char in text[:max_len]]
+    tokenized += [0] * (max_len - len(tokenized))
+    #创建词袋向量
+    bow_vector = torch.zeros(vocab_size)
+    for index in tokenized:
+        if index != 0:
+            bow_vector[index] += 1
+    # 增加batch维度
+    bow_vector = bow_vector.unsqueeze(0)
+    # 预测
+    model.eval()
+    with torch.no_grad():
+        output = model(bow_vector)
+
+    _, predicted_index = torch.max(output, 1)
+    predicted_index = predicted_index.item()
+    predicted_label = index_to_label[predicted_index]
+
+    return predicted_label
+
+# 索引到标签的映射字典,这是逆向映射字典，将数值索引转换回原始字符串标签,
+# 在预测阶段将模型输出的数值索引（如0,1,2）转换回人类可读的标签（如"cat","dog"），使结果可解释。
+index_to_label = {i: label for label, i in label_to_index.items()}
+
+new_text = "帮我导航到北京"
+predicted_class = classify_text(new_text, model, char_to_index, vocab_size, max_len, index_to_label)
+print(f"输入 '{new_text}' 预测为: '{predicted_class}'")
+
+new_text_2 = "查询明天北京的天气"
+predicted_class_2 = classify_text(new_text_2, model, char_to_index, vocab_size, max_len, index_to_label)
+print(f"输入 '{new_text_2}' 预测为: '{predicted_class_2}'")
+

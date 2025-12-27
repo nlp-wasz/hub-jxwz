@@ -1,0 +1,75 @@
+import jieba
+import pandas as pd
+from sklearn.model_selection import cross_val_predict
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.naive_bayes import MultinomialNB
+from sklearn.svm import SVC
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import classification_report, accuracy_score
+
+# from 其他模型预测 import input_feature
+
+# 1. 数据价值与预处理
+print('--- 1. 正在加载和预处理数据 ---')
+dataset = pd.read_csv('/BaiduNetdiskDownload/badou/my_project/dataset.csv', sep='\t', header=None, nrows=10000)
+
+print('数据集前5行预览：')
+print(dataset.head(5))
+
+
+# 使用jieba进行中文分词，并用空格分隔
+# sklearn的CountVectorizer默认使用空格作为分隔符,astype(str),确保 dataset[0] 的每一行是字符串类型！如果有 NaN 或非字符串，可能会报错。
+input_sentences = dataset[0].astype(str).apply(lambda x: ' '.join(jieba.lcut(x)))
+labels = dataset[1]
+
+# --- 2. 特征提取 (词袋模型) ---
+print("\n--- 2. 正在进行特征提取 ---")
+vectorizer = CountVectorizer()
+# .fit_transform()会先 学习词汇表（fit），再 生成词频矩阵（transform）
+input_features = vectorizer.fit_transform(input_sentences.values)
+print(f'特征矩阵的形状：{input_features.shape}')
+
+
+# --- 3. 模型训练与评估 ---
+# 不再需要手动划分训练集和测试集，cross_val_predict 会处理交叉验证的划分
+
+# 定义四种不同的模型
+
+# 键（key）：是模型的名字（字符串），用于显示，比如 'KNN (K-Nearest Neighbors)'
+# 值（value）：是模型的 未训练的 sklearn 分类器对象，比如 KNeighborsClassifier()
+
+models = {
+    'KNN (K-Nearest Neighbors)': KNeighborsClassifier(),
+    'Naive Bayes (MultinomialNB)': MultinomialNB(),
+    'SVM (Support Vector Classifier)': SVC(kernel='linear'),
+    'Decision Tree': DecisionTreeClassifier()
+}
+
+
+for name, model in models.items():
+    print(f'\n--- 正在评估模型：{name} ---')
+
+    # 使用 cross_val_predict 进行5折交叉验证，获取每个样本的预测结果,
+    # 在不手动拆分训练集/测试集的情况下，使用交叉验证的方式，对每个样本进行预测，并返回每个样本的预测标签。
+    # cv=5表示使用 5 折交叉验证（5-Fold Cross Validation）
+    # model:未训练的模型对象
+    # input_features:特征矩阵（比如词袋模型生成的 input_features，通常是稀疏矩阵）
+    # labels:真实的标签（比如类别 0、1，或者 'pos'/'neg'），形状为 (n_samples,)
+    # 1自动将数据分成5份（folds）
+    # 2.轮流使用其中的4份作为训练集，1份作为验证集
+    # 3.在每一折的验证集上做预测，最终得到每个样本的预测标签
+    # 4.返回一个数组y_pred，和原始labels一样长，表示每个样本在该模型下的预测类别
+    y_pred = cross_val_predict(model, input_features, labels, cv=5)
+
+    # 基于交叉验证的预测结果，计算并打印准确率和分类报告
+    # 生成一份详细的分类性能报告
+    # 每个类别的精确率（precision）
+    # 召回率（recall）
+    # F1 分数（F1-score）
+    # 每个类别的样本数（support）
+    # 宏观平均（macro avg）和加权平均（weighted avg）
+    # zero_division=0当有除零情况发生时（比如某个类别没有预测到），默认计为 0，避免报错
+    print(f'平均准确率： {accuracy_score(labels, y_pred):.4f}')
+    report = classification_report(labels, y_pred, zero_division=0)
+    print(report)

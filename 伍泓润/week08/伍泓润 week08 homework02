@@ -1,0 +1,665 @@
+from pydantic import BaseModel, Field
+from typing import Dict, List, Optional, Any
+from enum import Enum
+
+class IntentEnum(str, Enum):
+    PLAY_MUSIC = "play_music"
+    QUERY_WEATHER = "query_weather"
+    SEARCH_NEWS = "search_news"
+    SET_REMINDER = "set_reminder"
+    QUERY_TIME = "query_time"
+    UNKNOWN = "unknown"
+
+class DomainEnum(str, Enum):
+    MUSIC = "music"
+    WEATHER = "weather"
+    NEWS = "news"
+    PRODUCTIVITY = "productivity"
+    GENERAL = "general"
+
+class EntityType(str, Enum):
+    SONG_NAME = "song_name"
+    ARTIST = "artist"
+    CITY = "city"
+    TIME = "time"
+    DATE = "date"
+    TOPIC = "topic"
+    LOCATION = "location"
+
+class NLURequest(BaseModel):
+    text: str = Field(..., description="用户输入的文本")
+    user_id: Optional[str] = Field(None, description="用户ID")
+    context: Optional[Dict[str, Any]] = Field(None, description="对话上下文")
+
+class EntityValidationRequest(BaseModel):
+    entity_type: EntityType
+    entity_value: str
+    context: Optional[Dict[str, Any]] = None
+
+class EntityValidationResponse(BaseModel):
+    is_valid: bool
+    normalized_value: str
+    confidence: float = Field(..., ge=0, le=1)
+
+class IntentConfidenceRequest(BaseModel):
+    user_input: str
+    detected_intent: IntentEnum
+
+class AlternativeIntent(BaseModel):
+    intent: IntentEnum
+    score: float = Field(..., ge=0, le=1)
+
+class IntentConfidenceResponse(BaseModel):
+    confidence_score: float = Field(..., ge=0, le=1)
+    alternative_intents: List[AlternativeIntent]
+
+class NLUResponse(BaseModel):
+    intent: IntentEnum
+    domain: DomainEnum
+    entities: Dict[str, str]
+    confidence: Optional[float] = None
+    processing_time: float
+
+class BatchNLURequest(BaseModel):
+    texts: List[str]
+    user_id: Optional[str] = None
+
+class BatchNLUResponse(BaseModel):
+    results: List[NLUResponse]
+    total_processed: int
+
+
+import os
+from typing import Dict, Any
+
+
+class Settings:
+  # API配置
+  API_TITLE = "Joint NLU API"
+  API_VERSION = "1.0.0"
+  API_DESCRIPTION = "联合意图识别、领域识别和实体识别API"
+
+  # 模型配置
+  DEFAULT_MODEL = "gpt-3.5-turbo"
+  MAX_TOKENS = 1000
+  TEMPERATURE = 0.1
+
+  # 系统提示词模板
+  SYSTEM_PROMPT = """
+你是一个专业的自然语言理解系统，专门处理用户输入的意图识别、领域识别和实体识别。
+
+## 任务定义
+1. 意图识别：识别用户想要完成什么任务
+2. 领域识别：确定对话所属的知识领域  
+3. 实体识别：提取语句中的关键信息实体
+
+## 输出格式要求
+请严格按照以下JSON格式输出，不要添加任何其他内容：
+{{
+  "intent": "识别的意图",
+  "domain": "识别的领域", 
+  "entities": {{
+    "实体类型1": "实体值1",
+    "实体类型2": "实体值2"
+  }}
+}}
+
+## 可用意图列表
+- play_music: 播放音乐
+- query_weather: 查询天气
+- search_news: 搜索新闻
+- set_reminder: 设置提醒
+- query_time: 查询时间
+- unknown: 未知意图
+
+## 可用领域列表
+- music: 音乐
+- weather: 天气
+- news: 新闻
+- productivity: 效率工具
+- general: 通用领域
+
+## 实体类型
+- song_name: 歌曲名
+- artist: 艺术家
+- city: 城市
+- time: 时间
+- date: 日期
+- topic: 主题
+- location: 位置
+
+## 示例
+用户：播放周杰伦的七里香
+输出：{{"intent": "play_music", "domain": "music", "entities": {{"artist": "周杰伦", "song_name": "七里香"}}}}
+
+用户：明天北京天气怎么样
+输出：{{"intent": "query_weather", "domain": "weather", "entities": {{"city": "北京", "date": "明天"}}}}
+
+用户：现在几点了
+输出：{{"intent": "query_time", "domain": "general", "entities": {{}}}}
+"""
+
+  # 实体验证规则
+  VALIDATION_RULES = {
+    "city": {
+      "valid_values": ["北京", "上海", "广州", "深圳", "杭州", "成都", "武汉", "南京", "西安", "重庆"],
+      "normalization_rules": {
+        "beijing": "北京",
+        "shanghai": "上海",
+        "guangzhou": "广州",
+        "shenzhen": "深圳"
+      }
+    },
+    "time": {
+      "pattern": r'^(上午|下午|晚上)?\s*(\d{1,2}):?(\d{2})?$'
+    }
+  }
+
+
+settings = Settings()
+
+import re
+import time
+from typing import Dict, Any, List
+from .models import *
+from .config import settings
+
+
+class EntityValidator:
+  """实体验证和标准化工具"""
+
+  @staticmethod
+  def validate_entity(entity_type: EntityType, entity_value: str,
+                      context: Dict[str, Any] = None) -> EntityValidationResponse:
+    """
+    验证和标准化实体
+    """
+    try:
+      normalized_value = entity_value.strip()
+      confidence = 0.8  # 基础置信度
+
+      # 根据实体类型应用不同的验证规则
+      if entity_type == EntityType.CITY:
+        result = EntityValidator._validate_city(normalized_value)
+        normalized_value = result["normalized_value"]
+        confidence = result["confidence"]
+
+      elif entity_type == EntityType.TIME:
+        result = EntityValidator._validate_time(normalized_value)
+        confidence = result["confidence"]
+
+      elif entity_type == EntityType.DATE:
+        result = EntityValidator._validate_date(normalized_value)
+        confidence = result["confidence"]
+
+      elif entity_type == EntityType.SONG_NAME:
+        result = EntityValidator._validate_song_name(normalized_value)
+        confidence = result["confidence"]
+
+      return EntityValidationResponse(
+        is_valid=True,
+        normalized_value=normalized_value,
+        confidence=confidence
+      )
+
+    except Exception as e:
+      return EntityValidationResponse(
+        is_valid=False,
+        normalized_value=entity_value,
+        confidence=0.1
+      )
+
+  @staticmethod
+  def _validate_city(city: str) -> Dict[str, Any]:
+    """验证城市名称"""
+    valid_cities = settings.VALIDATION_RULES["city"]["valid_values"]
+    normalization_rules = settings.VALIDATION_RULES["city"]["normalization_rules"]
+
+    # 检查是否在有效城市列表中
+    if city in valid_cities:
+      return {"normalized_value": city, "confidence": 0.95}
+
+    # 尝试标准化
+    normalized = normalization_rules.get(city.lower(), city)
+    if normalized in valid_cities:
+      return {"normalized_value": normalized, "confidence": 0.9}
+
+    # 部分匹配
+    for valid_city in valid_cities:
+      if valid_city in city or city in valid_city:
+        return {"normalized_value": valid_city, "confidence": 0.7}
+
+    return {"normalized_value": city, "confidence": 0.3}
+
+  @staticmethod
+  def _validate_time(time_str: str) -> Dict[str, Any]:
+    """验证时间格式"""
+    pattern = settings.VALIDATION_RULES["time"]["pattern"]
+    if re.match(pattern, time_str):
+      return {"confidence": 0.9}
+    return {"confidence": 0.5}
+
+  @staticmethod
+  def _validate_date(date_str: str) -> Dict[str, Any]:
+    """验证日期"""
+    date_keywords = ["今天", "明天", "后天", "昨天", "上午", "下午", "晚上"]
+    if any(keyword in date_str for keyword in date_keywords):
+      return {"confidence": 0.9}
+    return {"confidence": 0.6}
+
+  @staticmethod
+  def _validate_song_name(song_name: str) -> Dict[str, Any]:
+    """验证歌曲名"""
+    # 简单的长度和字符检查
+    if len(song_name) >= 1 and len(song_name) <= 50:
+      return {"confidence": 0.85}
+    return {"confidence": 0.4}
+class IntentConfidenceCalculator:
+  """意图置信度计算工具"""
+
+  @staticmethod
+  def calculate_confidence(user_input: str, detected_intent: IntentEnum) -> IntentConfidenceResponse:
+    """
+    计算意图识别置信度
+    """
+    base_score = 0.7
+
+    # 基于关键词的置信度调整
+    keyword_patterns = {
+      IntentEnum.PLAY_MUSIC: ["播放", "来一首", "想听", "放一首", "音乐"],
+      IntentEnum.QUERY_WEATHER: ["天气", "气温", "下雨", "下雪", "温度"],
+      IntentEnum.SEARCH_NEWS: ["新闻", "头条", "消息", "报道"],
+      IntentEnum.SET_REMINDER: ["提醒", "记得", "别忘了", "记住"],
+      IntentEnum.QUERY_TIME: ["时间", "几点", "钟点", "时辰"]
+    }
+
+    # 检查关键词匹配
+    patterns = keyword_patterns.get(detected_intent, [])
+    keyword_matches = sum(1 for pattern in patterns if pattern in user_input)
+
+    # 计算置信度
+    if keyword_matches > 0:
+      base_score += min(0.3, keyword_matches * 0.1)
+
+    # 生成替代意图
+    alternative_intents = IntentConfidenceCalculator._get_alternative_intents(
+      user_input, detected_intent, base_score
+    )
+
+    return IntentConfidenceResponse(
+      confidence_score=min(0.99, base_score),
+      alternative_intents=alternative_intents
+    )
+
+  @staticmethod
+  def _get_alternative_intents(user_input: str, primary_intent: IntentEnum, primary_score: float) -> List[
+    AlternativeIntent]:
+    """获取替代意图"""
+    alternatives = []
+
+    # 为其他意图计算分数
+    all_intents = list(IntentEnum)
+    for intent in all_intents:
+      if intent != primary_intent and intent != IntentEnum.UNKNOWN:
+        # 简化的替代意图评分逻辑
+        score = max(0.1, 0.8 - primary_score)
+        alternatives.append(AlternativeIntent(intent=intent, score=score))
+
+    # 按分数排序并返回前3个
+    alternatives.sort(key=lambda x: x.score, reverse=True)
+    return alternatives[:3]
+
+
+class TextPreprocessor:
+  """文本预处理工具"""
+
+  @staticmethod
+  def preprocess_text(text: str) -> str:
+    """
+    文本预处理
+    """
+    # 去除多余空格
+    cleaned = re.sub(r'\s+', ' ', text.strip())
+
+    # 统一标点符号
+    cleaned = cleaned.replace('？', '?').replace('！', '!').replace('，', ',')
+
+    return cleaned
+
+  @staticmethod
+  def extract_keywords(text: str) -> List[str]:
+    """
+    提取关键词（简化版）
+    """
+    # 中文停用词（部分）
+    stop_words = {"的", "了", "在", "是", "我", "有", "和", "就", "不", "人", "都", "一", "一个", "上", "也", "很",
+                  "到", "说", "要", "去", "你", "会", "着", "没有", "看", "好", "自己", "这"}
+
+    words = list(text)
+    keywords = [word for word in words if word not in stop_words and len(word.strip()) > 0]
+
+    return keywords
+
+  import json
+  import time
+  import re
+  from typing import Dict, Any, Optional
+  from openai import OpenAI
+  from .models import *
+  from .config import settings
+  from .tools import EntityValidator, IntentConfidenceCalculator, TextPreprocessor
+
+class IntentConfidenceCalculator:
+  """意图置信度计算工具"""
+
+  @staticmethod
+  def calculate_confidence(user_input: str, detected_intent: IntentEnum) -> IntentConfidenceResponse:
+    """
+    计算意图识别置信度
+    """
+    base_score = 0.7
+
+    # 基于关键词的置信度调整
+    keyword_patterns = {
+      IntentEnum.PLAY_MUSIC: ["播放", "来一首", "想听", "放一首", "音乐"],
+      IntentEnum.QUERY_WEATHER: ["天气", "气温", "下雨", "下雪", "温度"],
+      IntentEnum.SEARCH_NEWS: ["新闻", "头条", "消息", "报道"],
+      IntentEnum.SET_REMINDER: ["提醒", "记得", "别忘了", "记住"],
+      IntentEnum.QUERY_TIME: ["时间", "几点", "钟点", "时辰"]
+    }
+
+    # 检查关键词匹配
+    patterns = keyword_patterns.get(detected_intent, [])
+    keyword_matches = sum(1
+class NLUEngine:
+    """NLU引擎核心类"""
+
+    def __init__(self, use_mock: bool = True):
+      self.use_mock = use_mock
+      if use_mock:
+        self.client = MockOpenAIClient()
+      else:
+        # 实际使用时配置真实的OpenAI客户端
+        self.client = OpenAI(api_key="your-openai-api-key")
+
+      self.validator = EntityValidator()
+      self.confidence_calculator = IntentConfidenceCalculator()
+      self.preprocessor = TextPreprocessor()
+
+    async def process(self, request: NLURequest) -> NLUResponse:
+      """
+      处理NLU请求
+      """
+      start_time = time.time()
+
+      try:
+        # 1. 文本预处理
+        processed_text = self.preprocessor.preprocess_text(request.text)
+
+        # 2. 调用大模型进行联合识别
+        nlu_result = await self._call_llm_for_nlu(processed_text)
+
+        # 3. 实体验证和标准化
+        validated_entities = await self._validate_entities(nlu_result["entities"])
+
+        # 4. 计算置信度
+        confidence_result = self.confidence_calculator.calculate_confidence(
+          processed_text,
+          IntentEnum(nlu_result["intent"])
+        )
+
+        processing_time = time.time() - start_time
+
+        return NLUResponse(
+          intent=IntentEnum(nlu_result["intent"]),
+          domain=DomainEnum(nlu_result["domain"]),
+          entities=validated_entities,
+          confidence=confidence_result.confidence_score,
+          processing_time=processing_time
+        )
+
+      except Exception as e:
+        processing_time = time.time() - start_time
+        # 返回默认响应
+        return NLUResponse(
+          intent=IntentEnum.UNKNOWN,
+          domain=DomainEnum.GENERAL,
+          entities={},
+          confidence=0.1,
+          processing_time=processing_time
+        )
+
+    async def _call_llm_for_nlu(self, text: str) -> Dict[str, Any]:
+      """
+      调用大模型进行NLU分析
+      """
+      try:
+        response = self.client.chat.completions.create(
+          model=settings.DEFAULT_MODEL,
+          messages=[
+            {"role": "system", "content": settings.SYSTEM_PROMPT},
+            {"role": "user", "content": text}
+          ],
+          max_tokens=settings.MAX_TOKENS,
+          temperature=settings.TEMPERATURE
+        )
+
+        result_text = response.choices[0].message.content.strip()
+
+        # 解析JSON响应
+        try:
+          return json.loads(result_text)
+        except json.JSONDecodeError:
+          # 如果JSON解析失败，尝试提取JSON部分
+          json_match = re.search(r'\{.*\}', result_text, re.DOTALL)
+          if json_match:
+            return json.loads(json_match.group())
+          else:
+            raise ValueError("无法解析模型响应")
+
+      except Exception as e:
+        # 降级到规则匹配
+        return self._fallback_rule_based_nlu(text)
+
+    async def _validate_entities(self, entities: Dict[str, str]) -> Dict[str, str]:
+      """
+      验证和标准化实体
+      """
+      validated_entities = {}
+
+      for entity_type, entity_value in entities.items():
+        try:
+          validation_result = self.validator.validate_entity(
+            EntityType(entity_type),
+            entity_value
+          )
+
+          if validation_result.is_valid:
+            validated_entities[entity_type] = validation_result.normalized_value
+
+        except Exception:
+          # 如果验证失败，保留原始值
+          validated_entities[entity_type] = entity_value
+
+      return validated_entities
+
+    def _fallback_rule_based_nlu(self, text: str) -> Dict[str, Any]:
+      """
+      规则降级处理
+      """
+      # 基于关键词的简单规则
+      if any(word in text for word in ["播放", "音乐", "歌曲", "听"]):
+        return {"intent": "play_music", "domain": "music", "entities": {}}
+      elif any(word in text for word in ["天气", "气温", "温度", "下雨"]):
+        return {"intent": "query_weather", "domain": "weather", "entities": {}}
+      elif any(word in text for word in ["新闻", "头条", "消息"]):
+        return {"intent": "search_news", "domain": "news", "entities": {}}
+      elif any(word in text for word in ["提醒", "记得", "记住", "别忘了"]):
+        return {"intent": "set_reminder", "domain": "productivity", "entities": {}}
+      elif any(word in text for word in ["时间", "几点", "钟点"]):
+        return {"intent": "query_time", "domain": "general", "entities": {}}
+      else:
+        return {"intent": "unknown", "domain": "general", "entities": {}}
+
+    async def batch_process(self, request: BatchNLURequest) -> BatchNLUResponse:
+      """
+      批量处理NLU请求
+      """
+      results = []
+
+      for text in request.texts:
+        nlu_request = NLURequest(text=text, user_id=request.user_id)
+        result = await self.process(nlu_request)
+        results.append(result)
+
+      return BatchNLUResponse(
+        results=results,
+        total_processed=len(results)
+      )
+
+from fastapi import FastAPI, HTTPException, Depends
+from fastapi.middleware.cors import CORSMiddleware
+import uvicorn
+from typing import List
+
+from .models import *
+from .nlu_engine import NLUEngine
+from .tools import EntityValidator, IntentConfidenceCalculator
+from .config import settings
+
+# 创建FastAPI应用
+app = FastAPI(
+    title=settings.API_TITLE,
+    version=settings.API_VERSION,
+    description=settings.API_DESCRIPTION
+)
+
+# CORS中间件
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 全局NLU引擎实例
+nlu_engine = NLUEngine(use_mock=True)
+entity_validator = EntityValidator()
+confidence_calculator = IntentConfidenceCalculator()
+
+@app.get("/")
+async def root():
+    """根端点"""
+    return {
+        "message": "Joint NLU API",
+        "version": settings.API_VERSION,
+        "status": "running"
+    }
+
+@app.get("/health")
+async def health_check():
+    """健康检查"""
+    return {"status": "healthy"}
+
+@app.post("/nlu/analyze", response_model=NLUResponse)
+async def analyze_text(request: NLURequest):
+    """
+    分析单条文本的意图、领域和实体
+    """
+    try:
+        result = await nlu_engine.process(request)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"处理失败: {str(e)}")
+
+@app.post("/nlu/batch-analyze", response_model=BatchNLUResponse)
+async def batch_analyze_text(request: BatchNLURequest):
+    """
+    批量分析文本
+    """
+    try:
+        result = await nlu_engine.batch_process(request)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"批量处理失败: {str(e)}")
+
+@app.post("/tools/validate-entity", response_model=EntityValidationResponse)
+async def validate_entity(request: EntityValidationRequest):
+    """
+    验证和标准化实体
+    """
+    try:
+        result = entity_validator.validate_entity(
+            request.entity_type,
+            request.entity_value,
+            request.context
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"实体验证失败: {str(e)}")
+
+@app.post("/tools/calculate-confidence", response_model=IntentConfidenceResponse)
+async def calculate_confidence(request: IntentConfidenceRequest):
+    """
+    计算意图识别置信度
+    """
+    try:
+        result = confidence_calculator.calculate_confidence(
+            request.user_input,
+            request.detected_intent
+        )
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"置信度计算失败: {str(e)}")
+
+@app.get("/config/intents")
+async def get_available_intents():
+    """获取可用的意图列表"""
+    return {
+        "intents": [intent.value for intent in IntentEnum],
+        "domains": [domain.value for domain in DomainEnum],
+        "entity_types": [entity_type.value for entity_type in EntityType]
+    }
+
+# 错误处理
+@app.exception_handler(Exception)
+async def global_exception_handler(request, exc):
+    return {
+        "error": str(exc),
+        "message": "内部服务器错误"
+    }
+
+if __name__ == "__main__":
+    uvicorn.run(
+        "app.main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True
+    )
+
+FROM python:3.9-slim
+
+WORKDIR /app
+
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
+
+COPY . .
+
+EXPOSE 8000
+
+CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
+
+version: '3.8'
+
+services:
+  joint-nlu-api:
+    build: .
+    ports:
+      - "8000:8000"
+    environment:
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+    volumes:
+      - ./app:/app/app
+    restart: unless-stopped

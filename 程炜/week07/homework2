@@ -1,0 +1,231 @@
+from datasets import Dataset
+import pandas as pd
+from transformers import (
+    AutoTokenizer,
+    AutoModelForCausalLM,
+    DataCollatorForSeq2Seq,
+    TrainingArguments,
+    Trainer,
+)
+from peft import LoraConfig, TaskType, get_peft_model
+import torch
+from tqdm import tqdm
+
+def load_and_preprocess_ner_data(file_path):
+    """加载和预处理NER数据"""
+    data = pd.read_csv(file_path, sep='\t', header=None)
+    data.columns = ["text", "entities"]
+    
+    # 转换为Hugging Face Dataset
+    ds = Dataset.from_pandas(data)
+    return ds
+
+def initialize_ner_model_and_tokenizer(model_path):
+    """初始化NER任务的模型和tokenizer"""
+    tokenizer = AutoTokenizer.from_pretrained(
+        model_path,
+        use_fast=False,
+        trust_remote_code=True
+    )
+    
+    model = AutoModelForCausalLM.from_pretrained(
+        model_path,
+        device_map="auto",
+        torch_dtype=torch.float16
+    )
+    
+    return tokenizer, model
+
+def process_ner_example(example, tokenizer, max_length=512):
+    """处理NER样本的函数"""
+    # 构建指令文本
+    instruction_text = (
+        "<|im_start|>system\n"
+        "你是一个专业的实体抽取系统，请从文本中识别并提取所有实体。"
+        "按照'实体类型:实体文本'的格式输出，多个实体用逗号分隔。<|im_end|>\n"
+        f"<|im_start|>user\n{example['text']}<|im_end|>\n"
+        "<|im_start|>assistant\n"
+    )
+    
+    # Tokenize指令部分
+    instruction = tokenizer(instruction_text, add_special_tokens=False)
+    
+    # Tokenize实体标签部分
+    entities = example["entities"] if example["entities"] else "未识别到实体"
+    response = tokenizer(entities, add_special_tokens=False)
+    
+    # 组合输入和标签
+    input_ids = instruction["input_ids"] + response["input_ids"] + [tokenizer.pad_token_id]
+    attention_mask = instruction["attention_mask"] + response["attention_mask"] + [1]
+    labels = [-100] * len(instruction["input_ids"]) + response["input_ids"] + [tokenizer.pad_token_id]
+    
+    # 截断超过最大长度的序列
+    if len(input_ids) > max_length:
+        input_ids = input_ids[:max_length]
+        attention_mask = attention_mask[:max_length]
+        labels = labels[:max_length]
+    
+    return {
+        "input_ids": input_ids,
+        "attention_mask": attention_mask,
+        "labels": labels
+    }
+
+def setup_lora_for_ner(model):
+    """为NER任务设置LoRA配置"""
+    config = LoraConfig(
+        task_type=TaskType.CAUSAL_LM,
+        target_modules=["q_proj", "k_proj", "v_proj", "o_proj"],
+        inference_mode=False,
+        r=8,
+        lora_alpha=32,
+        lora_dropout=0.1
+    )
+    
+    model = get_peft_model(model, config)
+    model.print_trainable_parameters()
+    return model
+
+def setup_ner_training_args(output_dir):
+    """设置NER训练参数"""
+    return TrainingArguments(
+        output_dir=output_dir,
+        per_device_train_batch_size=4,
+        gradient_accumulation_steps=8,
+        logging_steps=50,
+        num_train_epochs=3,
+        save_steps=100,
+        learning_rate=2e-5,
+        evaluation_strategy="steps",
+        eval_steps=100,
+        fp16=True,
+        save_total_limit=2,
+        report_to="none"
+    )
+
+def extract_entities(model, tokenizer, text, device="cuda"):
+    """使用微调后的模型抽取实体"""
+    messages = [
+        {"role": "system", "content": "你是一个专业的实体抽取系统，请从文本中识别并提取所有实体。按照'实体类型:实体文本'的格式输出，多个实体用逗号分隔。"},
+        {"role": "user", "content": text}
+    ]
+    
+    # 应用聊天模板
+    formatted_text = tokenizer.apply_chat_template(
+        messages,
+        tokenize=False,
+        add_generation_prompt=True
+    )
+    
+    # Tokenize输入
+    model_inputs = tokenizer([formatted_text], return_tensors="pt").to(device)
+    
+    # 生成预测
+    with torch.no_grad():
+        generated_ids = model.generate(
+            model_inputs.input_ids,
+            max_new_tokens=100,
+            do_sample=False,
+            pad_token_id=tokenizer.pad_token_id,
+            eos_token_id=tokenizer.eos_token_id
+        )
+    
+    # 提取生成的文本
+    generated_ids = generated_ids[:, model_inputs.input_ids.shape[1]:]
+    response = tokenizer.batch_decode(generated_ids, skip_special_tokens=True)[0]
+    
+    # 解析实体
+    entities = []
+    if response != "未识别到实体":
+        for entity_str in response.split(","):
+            entity_str = entity_str.strip()
+            if ":" in entity_str:
+                entity_type, entity_text = entity_str.split(":", 1)
+                entities.append({
+                    "entity_type": entity_type.strip(),
+                    "entity_text": entity_text.strip(),
+                    "start": text.find(entity_text.strip()),
+                    "end": text.find(entity_text.strip()) + len(entity_text.strip())
+                })
+    
+    return entities
+
+def train_ner_model():
+    """训练NER模型的主函数"""
+    # 1. 加载数据
+    print("加载NER数据...")
+    ds = load_and_preprocess_ner_data("ner_dataset.csv")
+    
+    # 2. 初始化模型
+    print("初始化Qwen模型...")
+    model_path = "Qwen/Qwen1.5-0.5B"
+    tokenizer, model = initialize_ner_model_and_tokenizer(model_path)
+    
+    # 3. 处理数据
+    print("处理NER数据...")
+    process_func = lambda x: process_ner_example(x, tokenizer)
+    tokenized_ds = ds.map(process_func, remove_columns=ds.column_names)
+    
+    # 划分训练集和验证集
+    train_ds = tokenized_ds.shuffle().select(range(int(0.9*len(tokenized_ds))))
+    eval_ds = tokenized_ds.shuffle().select(range(int(0.9*len(tokenized_ds)), len(tokenized_ds)))
+    
+    # 4. 设置LoRA
+    print("配置LoRA...")
+    model = setup_lora_for_ner(model)
+    
+    # 5. 训练配置
+    print("设置训练参数...")
+    training_args = setup_ner_training_args("./qwen_ner_lora")
+    
+    # 6. 开始训练
+    print("开始训练...")
+    trainer = Trainer(
+        model=model,
+        args=training_args,
+        train_dataset=train_ds,
+        eval_dataset=eval_ds,
+        data_collator=DataCollatorForSeq2Seq(
+            tokenizer=tokenizer,
+            padding=True
+        )
+    )
+    
+    trainer.train()
+    
+    # 7. 保存模型
+    print("保存模型...")
+    trainer.save_model()
+    tokenizer.save_pretrained("./qwen_ner_lora")
+
+def test_ner_model():
+    """测试训练好的NER模型"""
+    # 加载基础模型
+    model_path = "Qwen/Qwen1.5-0.5B"
+    tokenizer, model = initialize_ner_model_and_tokenizer(model_path)
+    
+    # 加载LoRA适配器
+    model.load_adapter("./qwen_ner_lora")
+    model.to("cuda")
+    
+    # 测试文本
+    test_texts = [
+        "苹果公司将于下月在加利福尼亚州库比蒂诺发布新款iPhone手机。",
+        "李白是唐代著名的诗人，出生于碎叶城。",
+        "我昨天在京东商城购买了一台华为Mate60手机。"
+    ]
+    
+    for text in test_texts:
+        entities = extract_entities(model, tokenizer, text)
+        print(f"文本: {text}")
+        print("识别到的实体:")
+        for entity in entities:
+            print(f"  {entity['entity_type']}: {entity['entity_text']} (位置: {entity['start']}-{entity['end']})")
+        print("-" * 50)
+
+if __name__ == "__main__":
+    # 训练模型
+    train_ner_model()
+    
+    # 测试模型
+    test_ner_model()

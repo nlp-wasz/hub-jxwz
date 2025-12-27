@@ -1,0 +1,46 @@
+import sys
+import platform
+from importlib.metadata import version, distributions
+
+# 作业环境配置检查
+
+# 查看pkg_resources.working_set中的内容
+# for p in distributions():
+#     print(f"{p.metadata['name']}=={p.version}")
+
+def get_installed_packages():
+    installed_packages = {k.metadata['name']: k.version for k in distributions()}
+    return installed_packages
+
+
+# 打印Python环境和常用库的信息
+def print_enviroment_info():
+    print('--- 系统和Python环境 ---')
+    print(f'操作系统：{platform.system()} {platform.release()} {platform.machine()}')
+    print(f'Python版本：{sys.version}')
+    print(f'当前工作目录：{sys.path[0]}''\n')
+    print('~_~''\t' * 30, '\n')
+
+    print('--- 已安装的常用库 ---')
+    required_packages = {
+        'jieba': 'jieba',
+        'scikit-learn': 'scikit-learn',
+        'pytorch': 'torch',
+        'numpy': 'numpy',
+        'pandas': 'pandas',
+        'requests': 'requests',
+        'matplotlib': 'matplotlib'
+    }
+
+    installed_packages = get_installed_packages()
+
+    # 获取已安装包信息并检查，<20表示左对齐，宽度为 20 个字符
+    for name, key in required_packages.items():
+        if key in installed_packages:
+            print(f'{name:<15} : {installed_packages[key]}')
+        else:
+            print(f'{name:<15} : 未安装')
+
+
+if __name__ == '__main__':
+    print_enviroment_info()

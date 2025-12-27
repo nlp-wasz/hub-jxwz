@@ -1,0 +1,22 @@
+【08-financial-report-generator】方案中使用的外部数据源总结：
+
+1. **搜索引擎 (Search Engines)**
+   - **DuckDuckGo**: 通过 `duckduckgo_search` 库使用。作为通用的网络搜索工具，用于获取网络上的公开信息。
+   - **搜狗搜索 (Sogou Search)**: 通过 `sogou_search` 库使用。作为中文搜索的首选引擎（代码中实现了从搜狗回退到 DuckDuckGo 的逻辑）。
+   - **Bing Search**: 在 `search_api.py` 中通过 `WebSearch` 工具调用，用于通用网络搜索。
+
+2. **金融数据接口库 (Financial Data Libraries)**
+   - **AkShare**: 
+     - 用于获取股票基本介绍信息（A股主营业务、港股公司资料）。
+     - 用于获取股票筹码分布数据 (`ak.stock_cyq_em`)。
+     - 用于辅助获取财务相关数据。
+   - **eFinance**:
+     - 用于获取股票基础信息 (`ef.stock.get_base_info`)。
+     - 在资金流向分析和热点分析中被引用。
+
+3. **东方财富 (EastMoney) 直接接口/爬虫**
+   - **板块数据**: 直接请求 `https://push2.eastmoney.com/api/qt/clist/get` 获取热门板块、概念板块、地域板块和行业板块数据。
+   - **资金流向**: 
+     - 指数资金流向：请求 `https://push2.eastmoney.com/api/qt/stock/get`。
+     - 个股资金流向：请求 `https://push2.eastmoney.com/api/qt/clist/get` (特定参数)。
+   - **公司公告**: 请求 `https://np-anotice-stock.eastmoney.com` 获取上市公司公告列表及详情。

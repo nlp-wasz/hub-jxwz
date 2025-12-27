@@ -1,0 +1,42 @@
+
+{
+    "type": "function",
+    "name": "simulate_dissolved_oxygen",
+    "description": "在水产养殖系统中，溶解氧 (Dissolved Oxygen, DO) 是影响水生生物健康和生长的关键环境因子之一。其浓度受水体自净能力、微生物活动、呼吸作用及外界环境（如温度、光照、风力）的周期性变化影响。本模型通过融合指数衰减项与周期性扰动项，描述DO浓度随时间的非线性动态变化，用于模拟封闭或半封闭系统中DO的演变过程，为水质调控提供理论支持。",
+    "parameters": {
+        "type": "object",
+        "properties": {
+            "a": {
+                "type": "number",
+                "description": "初始溶解氧释放量，反映系统初始状态下的氧含量"
+            },
+            "b": {
+                "type": "number",
+                "description": "溶解氧的衰减系数，刻画其随时间自然下降的速率"
+            },
+            "c": {
+                "type": "number",
+                "description": "环境扰动的振幅，体现外部周期性因素（如昼夜变化）对DO浓度的影响强度"
+            },
+            "d": {
+                "type": "number",
+                "description": "环境扰动的频率，反映扰动周期的快慢"
+            },
+            "t": {
+                "type": "number",
+                "description": "时间变量，表示经过的时间（单位：小时或天）"
+            }
+        },
+        "required": ["a", "b", "c", "d", "t"]
+    },
+    "sympy": "from sympy import symbols, exp, sin\na, b, c, d, t = symbols('a b c d t')\nDO_t = a * exp(-b * t) + c * sin(d * t)",
+    "return": {
+        "type": "object",
+        "properties": {
+            "DO(t)": {
+                "type": "number",
+                "description": "在时间 t 时的溶解氧浓度预测值"
+            }
+        }
+    }
+}

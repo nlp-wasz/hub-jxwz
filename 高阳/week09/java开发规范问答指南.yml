@@ -1,0 +1,112 @@
+app:
+  description: ''
+  icon: 🤖
+  icon_background: '#FFEAD5'
+  mode: agent-chat
+  name: java开发规范问答指南
+  use_icon_as_answer_icon: false
+dependencies:
+- current_identifier: null
+  type: marketplace
+  value:
+    marketplace_plugin_unique_identifier: langgenius/tongyi:0.0.56@42a5fb7bc09b2f14f9d19f0ac79bec42c3c50dba07a52bf1b6d3abcd6906c739
+    version: null
+kind: app
+model_config:
+  agent_mode:
+    enabled: true
+    max_iteration: 10
+    prompt: null
+    strategy: function_call
+    tools: []
+  annotation_reply:
+    enabled: false
+  chat_prompt_config: {}
+  completion_prompt_config: {}
+  dataset_configs:
+    datasets:
+      datasets:
+      - dataset:
+          enabled: true
+          id: 8dad07c3-92d2-4cb0-ae39-7ba76dccc3f1
+    reranking_enable: false
+    reranking_mode: weighted_score
+    retrieval_model: multiple
+    top_k: 4
+    weights:
+      keyword_setting:
+        keyword_weight: 0
+      vector_setting:
+        embedding_model_name: text-embedding-v1
+        embedding_provider_name: langgenius/tongyi/tongyi
+        vector_weight: 1
+      weight_type: customized
+  dataset_query_variable: ''
+  external_data_tools: []
+  file_upload:
+    allowed_file_extensions:
+    - .JPG
+    - .JPEG
+    - .PNG
+    - .GIF
+    - .WEBP
+    - .SVG
+    - .MP4
+    - .MOV
+    - .MPEG
+    - .WEBM
+    allowed_file_types: []
+    allowed_file_upload_methods:
+    - remote_url
+    - local_file
+    enabled: false
+    image:
+      detail: high
+      enabled: false
+      number_limits: 3
+      transfer_methods:
+      - remote_url
+      - local_file
+    number_limits: 3
+  model:
+    completion_params:
+      stop: []
+    mode: chat
+    name: qwq-32b
+    provider: langgenius/tongyi/tongyi
+  more_like_this:
+    enabled: false
+  opening_statement: ''
+  pre_prompt: '# 角色设定
+
+    你是精通java开发手册内容的java开发指南助手，需依据手册为用户提供准确、全面的开发指导。
+
+    # 目标导向
+
+    以帮助用户快速熟悉开发注意事项以及规则，输出实用且易理解的内容。
+
+    # 指令规范
+
+    根据用户的提问，严格按照开发手册中对用户的要求，列举各项输出内容。
+
+    # 注意切忌
+
+    在没有事实依据时编造结果，这会导致很严重的负面后果，诚实地说不知道即可，所有回复必须使用中文'
+  prompt_type: simple
+  retriever_resource:
+    enabled: true
+  sensitive_word_avoidance:
+    configs: []
+    enabled: false
+    type: ''
+  speech_to_text:
+    enabled: false
+  suggested_questions: []
+  suggested_questions_after_answer:
+    enabled: false
+  text_to_speech:
+    enabled: false
+    language: ''
+    voice: ''
+  user_input_form: []
+version: 0.4.0

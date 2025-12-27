@@ -1,0 +1,41 @@
+阅读政企问答项目的代码，自己描述RAG的实现流程，写为文档。
+
+/chat
+将查询和选定知识库送入全文检索和语义检索，结合两者得分，使用rrf 重排序和可选的rerank排序得到筛选指定数量的增强文档。
+将文档与提问送入模型，得到输出，返回结果。
+
+/v1/rerank
+待排序文本对送入bge-reranker-base模型打分，返回结果。
+
+/v1/embedding
+接收str或list[str]，送入"bge-small-zh-v1.5", "bge-base-zh-v1.5"模型，得到embedding输出，返回结果。
+
+@app.post("/v1/document")
+添加文档
+# 阶段1：快速响应阶段（同步）
+# - 验证知识库存在性
+# - 保存文件元数据到关系数据库
+# - 保存文件到磁盘
+# - 立即返回成功响应
+
+# 阶段2：耗时处理阶段（异步）
+# - 解析文件内容
+# - 文本分块
+# - 生成向量嵌入
+# - 存储到向量数据库/Elasticsearch
+
+@app.delete("/v1/document")
+删除文档
+
+@app.get("/v1/document")
+查询文档
+
+@app.post("/v1/knowledge_base")
+添加知识库
+
+@app.delete("/v1/knowledge_base")
+删除知识库
+
+@app.get("/v1/knowledge_base")
+查询知识库
+

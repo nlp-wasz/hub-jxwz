@@ -1,0 +1,143 @@
+(first_py312) C:\Users\admin\Documents\GitHub\python312\week4-9-3\Week04\01-intent-classify\test>ab -n 100 -c 1 -p "data.json" -T "application/json" -H "accept: application/json" "http://127.0.0.1:8000/v1/text-cls/bert" 
+This is ApacheBench, Version 2.3 <$Revision: 1923142 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient).....done
+
+
+Server Software:        uvicorn
+Server Hostname:        127.0.0.1
+Server Port:            8000
+
+Document Path:          /v1/text-cls/bert
+Document Length:        112 bytes
+
+Concurrency Level:      1
+Time taken for tests:   0.543 seconds
+Complete requests:      100
+Failed requests:        98
+   (Connect: 0, Receive: 0, Length: 98, Exceptions: 0)
+Total transferred:      23898 bytes
+Total body sent:        22300
+HTML transferred:       11298 bytes
+Requests per second:    184.27 [#/sec] (mean)
+Time per request:       5.427 [ms] (mean)
+Time per request:       5.427 [ms] (mean, across all concurrent requests)
+Transfer rate:          43.00 [Kbytes/sec] received
+                        40.13 kb/s sent
+                        83.13 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.3      0       1
+Processing:     3    5   2.4      5      19
+Waiting:        3    5   2.4      5      18
+Total:          4    5   2.4      5      19
+
+Percentage of the requests served within a certain time (ms)
+  50%      5
+  66%      5
+  75%      5
+  80%      6
+  90%      7
+  95%     13
+  98%     15
+  99%     19
+ 100%     19 (longest request)
+
+(first_py312) C:\Users\admin\Documents\GitHub\python312\week4-9-3\Week04\01-intent-classify\test>ab -n 100 -c 5 -p "data.json" -T "application/json" -H "accept: application/json" "http://127.0.0.1:8000/v1/text-cls/bert"
+This is ApacheBench, Version 2.3 <$Revision: 1923142 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient).....done
+
+
+Server Software:        uvicorn
+Server Hostname:        127.0.0.1
+Server Port:            8000
+
+Document Path:          /v1/text-cls/bert
+Document Length:        113 bytes
+
+Concurrency Level:      5
+Time taken for tests:   0.314 seconds
+Complete requests:      100
+Failed requests:        39
+   (Connect: 0, Receive: 0, Length: 39, Exceptions: 0)
+Total transferred:      23861 bytes
+Total body sent:        22300
+HTML transferred:       11261 bytes
+Requests per second:    318.38 [#/sec] (mean)
+Time per request:       15.705 [ms] (mean)
+Time per request:       3.141 [ms] (mean, across all concurrent requests)
+Transfer rate:          74.19 [Kbytes/sec] received
+                        69.33 kb/s sent
+                        143.52 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.4      0       1
+Processing:     8   15   4.9     13      37
+Waiting:        8   14   4.8     13      36
+Total:          8   15   4.8     14      37
+
+Percentage of the requests served within a certain time (ms)
+  50%     14
+  66%     14
+  75%     15
+  80%     16
+  90%     20
+  95%     31
+  98%     33
+  99%     37
+ 100%     37 (longest request)
+
+(first_py312) C:\Users\admin\Documents\GitHub\python312\week4-9-3\Week04\01-intent-classify\test>ab -n 100 -c 10 -p "data.json" -T "application/json" -H "accept: application/json" "http://127.0.0.1:8000/v1/text-cls/bert"
+This is ApacheBench, Version 2.3 <$Revision: 1923142 $>
+Copyright 1996 Adam Twiss, Zeus Technology Ltd, http://www.zeustech.net/
+Licensed to The Apache Software Foundation, http://www.apache.org/
+
+Benchmarking 127.0.0.1 (be patient).....done
+
+
+Server Software:        uvicorn
+Server Hostname:        127.0.0.1
+Server Port:            8000
+
+Document Path:          /v1/text-cls/bert
+Document Length:        113 bytes
+
+Concurrency Level:      10
+Time taken for tests:   0.309 seconds
+Complete requests:      100
+Failed requests:        11
+   (Connect: 0, Receive: 0, Length: 11, Exceptions: 0)
+Total transferred:      23889 bytes
+Total body sent:        22300
+HTML transferred:       11289 bytes
+Requests per second:    324.03 [#/sec] (mean)
+Time per request:       30.861 [ms] (mean)
+Time per request:       3.086 [ms] (mean, across all concurrent requests)
+Transfer rate:          75.59 [Kbytes/sec] received
+                        70.57 kb/s sent
+                        146.16 kb/s total
+
+Connection Times (ms)
+              min  mean[+/-sd] median   max
+Connect:        0    0   0.4      0       2
+Processing:     8   29   8.5     27      57
+Waiting:        8   27   8.2     25      55
+Total:          8   29   8.5     28      57
+
+Percentage of the requests served within a certain time (ms)
+  50%     28
+  66%     29
+  75%     31
+  80%     32
+  90%     37
+  95%     53
+  98%     57
+  99%     57
+ 100%     57 (longest request)

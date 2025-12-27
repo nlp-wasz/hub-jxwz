@@ -1,0 +1,18 @@
+2025-09-03 20:01:18,906 - numexpr.utils - INFO - Note: NumExpr detected 28 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2025-09-03 20:01:18,906 - numexpr.utils - INFO - NumExpr defaulting to 16 threads.
+2025-09-03 20:01:20,806 - uvicorn.error - INFO - Started server process [3535019]
+2025-09-03 20:01:20,806 - uvicorn.error - INFO - Waiting for application startup.
+2025-09-03 20:01:20,807 - uvicorn.error - INFO - Application startup complete.
+2025-09-03 20:01:20,807 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
+2025-09-03 20:05:23,594 - uvicorn.error - INFO - Shutting down
+2025-09-03 20:05:23,696 - uvicorn.error - INFO - Waiting for application shutdown.
+2025-09-03 20:05:23,697 - uvicorn.error - INFO - Application shutdown complete.
+2025-09-03 20:05:23,698 - uvicorn.error - INFO - Finished server process [3535019]
+2025-09-03 20:06:31,193 - numexpr.utils - INFO - Note: NumExpr detected 28 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2025-09-03 20:06:31,193 - numexpr.utils - INFO - NumExpr defaulting to 16 threads.
+2025-09-04 10:34:54,796 - numexpr.utils - INFO - Note: NumExpr detected 28 cores but "NUMEXPR_MAX_THREADS" not set, so enforcing safe limit of 16.
+2025-09-04 10:34:54,796 - numexpr.utils - INFO - NumExpr defaulting to 16 threads.
+2025-09-04 10:35:00,689 - uvicorn.error - INFO - Started server process [1133073]
+2025-09-04 10:35:00,689 - uvicorn.error - INFO - Waiting for application startup.
+2025-09-04 10:35:00,690 - uvicorn.error - INFO - Application startup complete.
+2025-09-04 10:35:00,690 - uvicorn.error - INFO - Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
